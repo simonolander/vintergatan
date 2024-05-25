@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::ops::AddAssign;
 
 use wasm_bindgen::prelude::*;
@@ -86,5 +87,22 @@ impl Universe {
         }
 
         self.cells = next;
+    }
+}
+
+impl Display for Universe {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        for line in self.cells.as_slice().chunks(self.width as usize) {
+            for cell in line {
+                let symbol = match cell {
+                    Dead => '◻',
+                    Alive => '◼',
+                };
+                write!(f, "{}", symbol)?;
+            }
+            write!(f, "\n")?;
+        }
+
+        Ok(())
     }
 }
