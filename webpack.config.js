@@ -7,7 +7,7 @@ const dist = path.resolve(__dirname, 'dist');
 module.exports = {
   mode: 'production',
   entry: {
-    index: './js/index.js',
+    index: './www/index.js',
   },
   experiments: {
     asyncWebAssembly: true,
@@ -18,13 +18,13 @@ module.exports = {
   },
   devServer: {
     static: {
-      directory: path.resolve(__dirname, 'static'),
+      directory: path.resolve(__dirname, 'www'),
     },
   },
   plugins: [
     new CopyPlugin({
       patterns: [
-        path.resolve(__dirname, 'static'),
+        path.resolve(__dirname, 'www'),
       ],
     }),
 
