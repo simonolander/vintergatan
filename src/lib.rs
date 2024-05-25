@@ -74,6 +74,26 @@ impl Universe {
 
 #[wasm_bindgen]
 impl Universe {
+    pub fn new() -> Universe {
+        let width = 64;
+        let height = 64;
+        let cells = (0..width * height).map(|i| {
+            if i % 2 == 0 || i % 7 == 0 {
+                Alive
+            } else { Dead }
+        }).collect();
+
+        Universe {
+            width,
+            height,
+            cells,
+        }
+    }
+
+    pub fn render(&self) -> String {
+        self.to_string()
+    }
+
     pub fn tick(&mut self) {
         let mut next = Vec::new();
 
