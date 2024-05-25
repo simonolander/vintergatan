@@ -7,6 +7,8 @@ authors = ["You <you@example.com>"]
 categories = ["wasm"]
 readme = "README.md"
 edition = "2018"
+license = "GPL-3"
+repository = "https://github.com/simonolander/vintergatan.git"
 
 [lib]
 crate-type = ["cdylib"]
