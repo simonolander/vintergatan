@@ -16,14 +16,55 @@ impl Universe {
         let width = 4;
         let height = 4;
         let mut neighbours = HashSet::new();
-        neighbours.insert((0usize, 0usize, 0usize, 1usize));
-        neighbours.insert((0usize, 0usize, 1usize, 0usize));
-        neighbours.insert((1usize, 0usize, 1usize, 1usize));
         Universe {
             width,
             height,
             neighbours,
         }
+    }
+
+    pub fn generate_step(&mut self) {
+        
+    }
+
+    pub fn are_neighbours(&self, r1: usize, c1: usize, r2: usize, c2: usize) -> bool {
+        if (r1, c1) < (r2, c2) {
+            self.neighbours.contains(&(r1, c1, r2, c2))
+        } else {
+            self.neighbours.contains(&(r2, c2, r1, c1))
+        }
+    }
+
+    pub fn score(&self) -> i32 {
+        let mut score = 0;
+
+        // horizontal walls
+        for row in 0..self.height {
+            let mut wall_length = 0;
+            for column in 0..self.height {
+                if self.are_neighbours(row, column, row + 1, column) {
+                    score -= wall_length * wall_length;
+                    wall_length = 0;
+                } else {
+                    wall_length += 1;
+                }
+            }
+        }
+
+        // vertical walls
+        for column in 0..self.height {
+            let mut wall_length = 0;
+            for row in 0..self.height {
+                if self.are_neighbours(row, column, row, column + 1) {
+                    score -= wall_length * wall_length;
+                    wall_length = 0;
+                } else {
+                    wall_length += 1;
+                }
+            }
+        }
+
+        score
     }
 
     pub fn render(&self) -> String {
