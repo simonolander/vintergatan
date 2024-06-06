@@ -1,70 +1,169 @@
-use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
+use js_sys::Math;
+use petgraph::graphmap::UnGraphMap;
 use wasm_bindgen::prelude::wasm_bindgen;
+
+#[wasm_bindgen]
+extern "C" {
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
+macro_rules! console_log {
+    // Note that this is using the `log` function imported above during
+    // `bare_bones`
+    ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
+}
+
+#[wasm_bindgen]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Copy, Clone, Hash)]
+pub struct Position {
+    row: i32,
+    column: i32,
+}
+
+impl Position {
+    pub fn new(row: i32, column: i32) -> Position {
+        Position { row, column }
+    }
+
+    pub fn random(width: usize, height: usize) -> Position {
+        let row = random_i32(0, height as i32);
+        let column = random_i32(0, width as i32);
+        Position { row, column }
+    }
+
+    pub fn up(&self) -> Position {
+        Position {
+            row: self.row - 1,
+            ..*self
+        }
+    }
+
+    pub fn right(&self) -> Position {
+        Position {
+            column: self.column + 1,
+            ..*self
+        }
+    }
+
+    pub fn down(&self) -> Position {
+        Position {
+            row: self.row + 1,
+            ..*self
+        }
+    }
+
+    pub fn left(&self) -> Position {
+        Position {
+            column: self.column - 1,
+            ..*self
+        }
+    }
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.row, self.column)
+    }
+}
+
+impl From<(usize, usize)> for Position {
+    fn from((row, column): (usize, usize)) -> Self {
+        Position::new(row as i32, column as i32)
+    }
+}
+
+fn random_bool() -> bool {
+    Math::random() < 0.5
+}
+
+fn random_f64(lower_bound: f64, upper_bound: f64) -> f64 {
+    (Math::random() * (upper_bound - lower_bound)) + lower_bound
+}
+
+fn random_i32(lower_bound: i32, upper_bound: i32) -> i32 {
+    random_f64(lower_bound as f64, upper_bound as f64) as i32
+}
+
+fn random_usize(lower_bound: usize, upper_bound: usize) -> usize {
+    random_f64(lower_bound as f64, upper_bound as f64) as usize
+}
+
+fn random_element<T: Clone>(v: Vec<T>) -> Option<T> {
+    v.get(random_usize(0, v.len())).cloned()
+}
 
 #[wasm_bindgen]
 pub struct Universe {
     width: usize,
     height: usize,
-    neighbours: HashSet<(usize, usize, usize, usize)>,
+    graph: UnGraphMap<Position, ()>,
 }
 
 #[wasm_bindgen]
 impl Universe {
     pub fn new() -> Universe {
-        let width = 4;
-        let height = 4;
-        let mut neighbours = HashSet::new();
+        let width = 40;
+        let height = 40;
+        let mut graph: UnGraphMap<Position, ()> = UnGraphMap::new();
+        for row in 0..height {
+            for column in 0..width {
+                graph.add_node(Position::from((row, column)));
+            }
+        }
         Universe {
             width,
             height,
-            neighbours,
+            graph,
         }
     }
 
-    pub fn generate_step(&mut self) {
-        
+    pub fn generate() -> Universe {
+        let mut universe = Universe::new();
+        for _ in 0..(universe.width * universe.height) {
+            universe.generate_step();
+        }
+        universe
     }
 
-    pub fn are_neighbours(&self, r1: usize, c1: usize, r2: usize, c2: usize) -> bool {
-        if (r1, c1) < (r2, c2) {
-            self.neighbours.contains(&(r1, c1, r2, c2))
+    pub fn generate_step(&mut self) -> bool {
+        let p1 = Position::random(self.width, self.height);
+        console_log!("p1: {}", p1);
+        if let Some(p2) = random_element(self.adjacent_non_neighbours(&p1)) {
+            self.graph.add_edge(p1, p2, ());
+            console_log!("p2: {}", p2);
+            true
         } else {
-            self.neighbours.contains(&(r2, c2, r1, c1))
+            false
         }
     }
 
-    pub fn score(&self) -> i32 {
-        let mut score = 0;
+    pub fn adjacent_positions(&self, p: &Position) -> Vec<Position> {
+        vec![p.left(), p.up(), p.right(), p.down()]
+            .iter()
+            .copied()
+            .filter(|&adjacent_position| self.graph.contains_node(adjacent_position))
+            .collect()
+    }
 
-        // horizontal walls
-        for row in 0..self.height {
-            let mut wall_length = 0;
-            for column in 0..self.height {
-                if self.are_neighbours(row, column, row + 1, column) {
-                    score -= wall_length * wall_length;
-                    wall_length = 0;
-                } else {
-                    wall_length += 1;
-                }
-            }
-        }
+    pub fn adjacent_non_neighbours(&self, p: &Position) -> Vec<Position> {
+        self.adjacent_positions(p).iter().copied().filter(|adjacent_position| !self.are_neighbours(p, adjacent_position)).collect()
+    }
 
-        // vertical walls
-        for column in 0..self.height {
-            let mut wall_length = 0;
-            for row in 0..self.height {
-                if self.are_neighbours(row, column, row, column + 1) {
-                    score -= wall_length * wall_length;
-                    wall_length = 0;
-                } else {
-                    wall_length += 1;
-                }
-            }
-        }
+    pub fn are_neighbours(&self, p1: &Position, p2: &Position) -> bool {
+        self.graph.contains_edge(*p1, *p2)
+    }
 
-        score
+    pub fn is_outside(&self, p: &Position) -> bool {
+        self.graph.contains_node(*p)
+    }
+
+    pub fn is_inside(&self, p: &Position) -> bool {
+        !self.is_outside(p)
     }
 
     pub fn render(&self) -> String {
@@ -76,31 +175,16 @@ impl Display for Universe {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for row in 0..=self.height {
             for column in 0..=self.width {
-                let top = match (row, column) {
-                    (0, _) => false,
-                    (_, 0) => true,
-                    (_, c) if c == self.width => true,
-                    (r, c) => !self.neighbours.contains(&(r - 1, c - 1, r - 1, c))
-                };
-                let right = match (row, column) {
-                    (_, c) if c == self.width => false,
-                    (0, _) => true,
-                    (r, _) if r == self.height => true,
-                    (r, c) => !self.neighbours.contains(&(r - 1, c, r, c))
-                };
-                let bottom = match (row, column) {
-                    (r, _) if r == self.height => false,
-                    (_, 0) => true,
-                    (_, c) if c == self.width => true,
-                    (r, c) => !self.neighbours.contains(&(r, c - 1, r, c))
-                };
-                let left = match (row, column) {
-                    (_, 0) => false,
-                    (0, _) => true,
-                    (r, _) if r == self.height => true,
-                    (r, c) => !self.neighbours.contains(&(r - 1, c - 1, r, c - 1)),
-                };
-                match (top, right, bottom, left) {
+                let bottom_right = Position::from((row, column));
+                let bottom_left = bottom_right.left();
+                let top_left = bottom_left.up();
+                let top_right = bottom_right.up();
+
+                let bar_top = row != 0 && !self.are_neighbours(&top_left, &top_right);
+                let bar_right = column != self.width && !self.are_neighbours(&top_right, &bottom_right);
+                let bar_bottom = row != self.height && !self.are_neighbours(&bottom_left, &bottom_right);
+                let bar_left = column != 0 && !self.are_neighbours(&top_left, &bottom_left);
+                match (bar_top, bar_right, bar_bottom, bar_left) {
                     (false, false, false, false) => write!(f, "  ")?,
                     (false, false, false, true) => write!(f, "╴ ")?,
                     (false, false, true, false) => write!(f, "╷ ")?,
