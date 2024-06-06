@@ -1,7 +1,10 @@
+use std::cmp::{max, min};
+use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
 use js_sys::Math;
 use petgraph::graphmap::UnGraphMap;
+use petgraph::visit::{Bfs, Dfs, Walker};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[wasm_bindgen]
@@ -98,6 +101,64 @@ fn random_element<T: Clone>(v: Vec<T>) -> Option<T> {
 }
 
 #[wasm_bindgen]
+pub struct Galaxy {
+    positions: HashSet<Position>,
+}
+
+impl Galaxy {
+    fn new(positions: impl IntoIterator<Item=Position>) -> Galaxy {
+        Galaxy { positions: positions.into_iter().collect() }
+    }
+
+    fn center(&self) -> Position {
+        #[derive(Default)]
+        struct MinMax {
+            min_row: i32,
+            max_row: i32,
+            min_column: i32,
+            max_column: i32,
+        }
+        let option_min_max = self.positions.iter().fold(Option::<MinMax>::default(), |acc, p| match acc {
+            None => Some(MinMax {
+                min_row: p.row,
+                max_row: p.row,
+                min_column: p.column,
+                max_column: p.column,
+            }),
+            Some(min_max) => Some(MinMax {
+                min_row: min(p.row, min_max.min_row),
+                max_row: max(p.row, min_max.min_row),
+                min_column: min(p.column, min_max.min_column),
+                max_column: max(p.column, min_max.min_column),
+            })
+        });
+
+        if let Some(min_max) = option_min_max {
+            let center_half_row = min_max.min_row + min_max.max_row;
+            let center_half_column = min_max.min_column + min_max.max_column;
+            Position::new(center_half_row, center_half_column)
+        } else {
+            Position::new(0, 0)
+        }
+    }
+
+    fn mirror_position(&self, p: &Position) -> Position {
+        let center = self.center();
+        let mirrored_row = center.row - p.row;
+        let mirrored_column = center.column - p.column;
+        Position::new(mirrored_row, mirrored_column)
+    }
+
+    fn contains_position(&self, p: &Position) -> bool {
+        self.positions.contains(p)
+    }
+
+    fn is_symmetric(&self) -> bool {
+        self.positions.iter().all(|p| self.contains_position(&self.mirror_position(p)))
+    }
+}
+
+#[wasm_bindgen]
 pub struct Universe {
     width: usize,
     height: usize,
@@ -131,15 +192,21 @@ impl Universe {
     }
 
     pub fn generate_step(&mut self) -> bool {
-        let p1 = Position::random(self.width, self.height);
-        console_log!("p1: {}", p1);
+        let p1 = self.random_position();
+        let galaxy_p1 = self.get_galaxy(&p1);
         if let Some(p2) = random_element(self.adjacent_non_neighbours(&p1)) {
+            let p3 = galaxy_p1.mirror_position(&p2);
+            let p3_galaxy = self.get_galaxy(p3);
+            let _
             self.graph.add_edge(p1, p2, ());
-            console_log!("p2: {}", p2);
             true
         } else {
             false
         }
+    }
+
+    pub fn random_position(&self) -> Position {
+        Position::random(self.width, self.height)
     }
 
     pub fn adjacent_positions(&self, p: &Position) -> Vec<Position> {
@@ -156,6 +223,11 @@ impl Universe {
 
     pub fn are_neighbours(&self, p1: &Position, p2: &Position) -> bool {
         self.graph.contains_edge(*p1, *p2)
+    }
+
+    pub fn get_galaxy(&self, p: &Position) -> Galaxy {
+        let search = Dfs::new(&self.graph, *p);
+        Galaxy::new(search.iter(&self.graph))
     }
 
     pub fn is_outside(&self, p: &Position) -> bool {
