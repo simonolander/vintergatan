@@ -3,8 +3,9 @@ use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
 use js_sys::Math;
+use petgraph::algo::connected_components;
 use petgraph::graphmap::UnGraphMap;
-use petgraph::visit::{Bfs, Dfs, Walker};
+use petgraph::visit::{Dfs, IntoEdges, Walker};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[wasm_bindgen]
@@ -66,6 +67,16 @@ impl Position {
             ..*self
         }
     }
+
+    pub fn adjacent(&self) -> Vec<Position> {
+        vec![self.up(), self.right(), self.down(), self.left()]
+    }
+
+    pub fn is_adjacent_to(&self, other: &Position) -> bool {
+        let delta_row = self.row.abs_diff(other.row);
+        let delta_column = self.column.abs_diff(other.column);
+        delta_row + delta_column == 1
+    }
 }
 
 impl Display for Position {
@@ -101,6 +112,7 @@ fn random_element<T: Clone>(v: Vec<T>) -> Option<T> {
 }
 
 #[wasm_bindgen]
+#[derive(Clone)]
 pub struct Galaxy {
     positions: HashSet<Position>,
 }
@@ -156,9 +168,38 @@ impl Galaxy {
     fn is_symmetric(&self) -> bool {
         self.positions.iter().all(|p| self.contains_position(&self.mirror_position(p)))
     }
+
+    fn is_connected(&self) -> bool {
+        if self.positions.is_empty() {
+            return true
+        }
+        let mut graph = UnGraphMap::new();
+        for p in self.positions.iter() {
+            graph.add_node(*p);
+            for adjacent in p.adjacent() {
+                if self.contains_position(&adjacent) {
+                    graph.add_edge(adjacent, *p, ());
+                }
+            }
+        }
+        connected_components(&graph) == 1
+    }
+
+    fn with_position(&self, p: &Position) -> Galaxy {
+        let mut g = self.clone();
+        g.positions.insert(*p);
+        g
+    }
+
+    fn without_position(&self, p: &Position) -> Galaxy {
+        let mut g = self.clone();
+        g.positions.remove(p);
+        g
+    }
 }
 
 #[wasm_bindgen]
+#[derive(Clone)]
 pub struct Universe {
     width: usize,
     height: usize,
@@ -168,8 +209,8 @@ pub struct Universe {
 #[wasm_bindgen]
 impl Universe {
     pub fn new() -> Universe {
-        let width = 40;
-        let height = 40;
+        let width = 10;
+        let height = 10;
         let mut graph: UnGraphMap<Position, ()> = UnGraphMap::new();
         for row in 0..height {
             for column in 0..width {
@@ -186,23 +227,73 @@ impl Universe {
     pub fn generate() -> Universe {
         let mut universe = Universe::new();
         for _ in 0..(universe.width * universe.height) {
-            universe.generate_step();
+            let mut un = universe.clone();
+            if (un.generate_step()) {
+                universe = un;
+            }
         }
         universe
     }
 
     pub fn generate_step(&mut self) -> bool {
         let p1 = self.random_position();
-        let galaxy_p1 = self.get_galaxy(&p1);
-        if let Some(p2) = random_element(self.adjacent_non_neighbours(&p1)) {
-            let p3 = galaxy_p1.mirror_position(&p2);
-            let p3_galaxy = self.get_galaxy(p3);
-            let _
-            self.graph.add_edge(p1, p2, ());
-            true
-        } else {
-            false
+        let p1_galaxy = self.get_galaxy(&p1);
+        let p2_option = random_element(self.adjacent_non_neighbours(&p1));
+        if p2_option.is_none() {
+            return false
         }
+        let p2 = p2_option.unwrap();
+        let p2_galaxy = self.get_galaxy(&p2);
+        let p2_galaxy_without_p2 = p2_galaxy.without_position(&p2);
+        if !p2_galaxy_without_p2.is_connected() {
+            return false
+        }
+        let p1_galaxy_with_p2 = p1_galaxy.with_position(&p2);
+        if !p1_galaxy_with_p2.is_symmetric() {
+            let p3 = p1_galaxy.mirror_position(&p2);
+            let p3_galaxy = self.get_galaxy(&p3);
+            if !p3_galaxy.without_position(&p3).is_connected() {
+                return false;
+            }
+            let p4 = p3_galaxy.mirror_position(&p3);
+            self.remove_all_neighbours(&p4);
+            self.make_neighbours(&p1, &p3);
+        }
+        if !p2_galaxy_without_p2.is_symmetric() {
+            let p5 = p2_galaxy.mirror_position(&p2);
+            self.remove_all_neighbours(&p5);
+        }
+        self.make_neighbours(&p1, &p2);
+        true
+    }
+
+    pub fn remove_all_neighbours(&mut self, p: &Position) {
+        for adjacent_position in self.adjacent_positions(p) {
+            self.graph.remove_edge(*p, adjacent_position);
+        }
+    }
+
+    /**
+     * Joins p2 into the galaxy of p1, removing any previous edges from p2,
+     * and adding edges to all neighbouring positions in the galaxy of p1.
+     * Returns whether p1 and p2 were successfully made neighbours.
+     */
+    pub fn make_neighbours(&mut self, p1: &Position, p2: &Position) -> bool {
+        if !p1.is_adjacent_to(p2) {
+            return false;
+        }
+        if self.are_neighbours(p1, p2) {
+            return false;
+        }
+        let p1_galaxy = self.get_galaxy(p1);
+        for p2_adjacent in self.adjacent_positions(p2) {
+            if p1_galaxy.contains_position(&p2_adjacent) {
+                self.graph.add_edge(*p2, p2_adjacent, ());
+            } else {
+                self.graph.remove_edge(*p2, p2_adjacent);
+            }
+        }
+        true
     }
 
     pub fn random_position(&self) -> Position {
