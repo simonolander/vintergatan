@@ -2,11 +2,11 @@ use std::cmp::{max, min};
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
-use js_sys::Math;
 use petgraph::algo::connected_components;
 use petgraph::graphmap::UnGraphMap;
-use petgraph::visit::{Dfs, IntoEdges, Walker};
+use petgraph::visit::{Dfs, Walker};
 use wasm_bindgen::prelude::wasm_bindgen;
+use crate::random::{random_element, random_i32};
 
 #[wasm_bindgen]
 extern "C" {
@@ -16,11 +16,11 @@ extern "C" {
     fn log(s: &str);
 }
 
-macro_rules! console_log {
-    // Note that this is using the `log` function imported above during
-    // `bare_bones`
-    ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
-}
+// macro_rules! console_log {
+//     // Note that this is using the `log` function imported above during
+//     // `bare_bones`
+//     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
+// }
 
 #[wasm_bindgen]
 #[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Copy, Clone, Hash)]
@@ -91,26 +91,6 @@ impl From<(usize, usize)> for Position {
     }
 }
 
-fn random_bool() -> bool {
-    Math::random() < 0.5
-}
-
-fn random_f64(lower_bound: f64, upper_bound: f64) -> f64 {
-    (Math::random() * (upper_bound - lower_bound)) + lower_bound
-}
-
-fn random_i32(lower_bound: i32, upper_bound: i32) -> i32 {
-    random_f64(lower_bound as f64, upper_bound as f64) as i32
-}
-
-fn random_usize(lower_bound: usize, upper_bound: usize) -> usize {
-    random_f64(lower_bound as f64, upper_bound as f64) as usize
-}
-
-fn random_element<T: Clone>(v: Vec<T>) -> Option<T> {
-    v.get(random_usize(0, v.len())).cloned()
-}
-
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct Galaxy {
@@ -171,7 +151,7 @@ impl Galaxy {
 
     fn is_connected(&self) -> bool {
         if self.positions.is_empty() {
-            return true
+            return true;
         }
         let mut graph = UnGraphMap::new();
         for p in self.positions.iter() {
@@ -228,7 +208,7 @@ impl Universe {
         let mut universe = Universe::new();
         for _ in 0..(universe.width * universe.height) {
             let mut un = universe.clone();
-            if (un.generate_step()) {
+            if un.generate_step() {
                 universe = un;
             }
         }
@@ -240,13 +220,13 @@ impl Universe {
         let p1_galaxy = self.get_galaxy(&p1);
         let p2_option = random_element(self.adjacent_non_neighbours(&p1));
         if p2_option.is_none() {
-            return false
+            return false;
         }
         let p2 = p2_option.unwrap();
         let p2_galaxy = self.get_galaxy(&p2);
         let p2_galaxy_without_p2 = p2_galaxy.without_position(&p2);
         if !p2_galaxy_without_p2.is_connected() {
-            return false
+            return false;
         }
         let p1_galaxy_with_p2 = p1_galaxy.with_position(&p2);
         if !p1_galaxy_with_p2.is_symmetric() {

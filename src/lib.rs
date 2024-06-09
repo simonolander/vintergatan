@@ -1,4 +1,5 @@
-mod universe;
+pub mod random;
+pub mod universe;
 
 use wasm_bindgen::prelude::*;
 use web_sys;
