@@ -4,8 +4,8 @@ use rand::Rng;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Copy, Clone, Hash)]
 pub struct Position {
-    row: i32,
-    column: i32,
+    pub row: i32,
+    pub column: i32,
 }
 
 impl Position {
@@ -52,6 +52,7 @@ impl Position {
         vec![self.up(), self.right(), self.down(), self.left()]
     }
 
+    /// Returns true iff other is directly above, below, to the left, or to the right of this position.
     pub fn is_adjacent_to(&self, other: &Position) -> bool {
         let delta_row = self.row.abs_diff(other.row);
         let delta_column = self.column.abs_diff(other.column);
@@ -62,6 +63,12 @@ impl Position {
 impl Display for Position {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "({}, {})", self.row, self.column)
+    }
+}
+
+impl From<(usize, usize)> for Position {
+    fn from((row, column): (usize, usize)) -> Self {
+        Position::new(row as i32, column as i32)
     }
 }
 
@@ -178,6 +185,12 @@ mod tests {
             let p1 = Position::new(r1, c1);
             let p2 = Position::new(r2, c2);
             prop_assert_eq!(p1.is_adjacent_to(&p2), p2.is_adjacent_to(&p1));
+        }
+
+        #[test]
+        fn test_from_usize_usize(row: i32, col: i32) {
+            let tuple = (row as usize, col as usize);
+            prop_assert_eq!(Position::from(tuple), Position::new(row, col));
         }
     }
 }

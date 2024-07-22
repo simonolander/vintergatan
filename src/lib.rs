@@ -38,7 +38,7 @@ pub fn main_js() -> Result<(), JsValue> {
     let document = window.document().unwrap();
 
     let board = document.get_element_by_id("board").expect("Element with id=board not found");
-    board.set_inner_html(&Universe::generate().render());
+    // board.set_inner_html(&Universe::generate().render());
 
     Ok(())
 }
