@@ -1,3 +1,6 @@
+use vintergatan_rust::model::position::Position;
+
 fn main() {
-    println!("Hello, world!");
+    let p = Position::new(0, 0);
+    println!("{}", p);
 }
