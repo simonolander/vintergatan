@@ -3,8 +3,9 @@ use std::collections::HashSet;
 
 use petgraph::algo::connected_components;
 use petgraph::graphmap::UnGraphMap;
-use proptest::collection::vec;
+
 use crate::model::position::Position;
+use crate::model::rectangle::Rectangle;
 
 #[derive(Clone)]
 pub struct Galaxy {
@@ -28,38 +29,31 @@ impl Galaxy {
     ///
     /// If the galaxy is empty, (0, 0) is returned.
     pub fn center(&self) -> Position {
-        #[derive(Default)]
-        struct MinMax {
-            min_row: i32,
-            max_row: i32,
-            min_column: i32,
-            max_column: i32,
-        }
-        let option_min_max = self.positions.iter().fold(
-            Option::<MinMax>::default(),
+        let rect = self.bounding_rectangle();
+        let center_half_row = rect.min_row + rect.max_row;
+        let center_half_column = rect.min_column + rect.max_column;
+        Position::new(center_half_row, center_half_column)
+    }
+
+    /// Returns the smallest rectangle that contains the galaxy.
+    pub fn bounding_rectangle(&self) -> Rectangle {
+        self.positions.iter().fold(
+            Option::<Rectangle>::default(),
             |acc, p| match acc {
-                None => Some(MinMax {
+                None => Some(Rectangle {
                     min_row: p.row,
                     max_row: p.row,
                     min_column: p.column,
                     max_column: p.column,
                 }),
-                Some(min_max) => Some(MinMax {
-                    min_row: min(p.row, min_max.min_row),
-                    max_row: max(p.row, min_max.max_row),
-                    min_column: min(p.column, min_max.min_column),
-                    max_column: max(p.column, min_max.max_column),
-                })
+                Some(rect) => Some(Rectangle::new(
+                    min(p.row, rect.min_row),
+                    max(p.row, rect.max_row),
+                    min(p.column, rect.min_column),
+                    max(p.column, rect.max_column),
+                ))
             },
-        );
-
-        if let Some(min_max) = option_min_max {
-            let center_half_row = min_max.min_row + min_max.max_row;
-            let center_half_column = min_max.min_column + min_max.max_column;
-            Position::new(center_half_row, center_half_column)
-        } else {
-            Position::new(0, 0)
-        }
+        ).unwrap_or(Rectangle::default())
     }
 
     pub fn mirror_position(&self, p: &Position) -> Position {
@@ -97,21 +91,19 @@ impl Galaxy {
         let center = self.center();
         let rows = if center.row % 2 == 0 {
             vec![center.row / 2]
-        }
-        else {
+        } else {
             vec![center.row / 2, center.row / 2 + 1]
         };
         let columns = if center.column % 2 == 0 {
             vec![center.column / 2]
-        }
-        else {
+        } else {
             vec![center.column / 2, center.column / 2 + 1]
         };
         for &row in &rows {
             for &col in &columns {
                 let p = Position::new(row, col);
                 if !self.contains_position(&p) {
-                    return false
+                    return false;
                 }
             }
         }
@@ -133,11 +125,15 @@ impl Galaxy {
         g.positions.remove(p);
         g
     }
+
+    ///
+    pub fn rectangles(&self) -> Vec<Rectangle> {
+        vec![]
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use proptest::proptest;
     use crate::model::galaxy::Galaxy;
     use crate::model::position::Position;
 

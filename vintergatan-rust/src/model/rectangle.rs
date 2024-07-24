@@ -1,0 +1,35 @@
+#[derive(Eq, PartialEq, Default)]
+pub struct Rectangle {
+    pub min_row: i32,
+    pub max_row: i32,
+    pub min_column: i32,
+    pub max_column: i32,
+}
+
+impl Rectangle {
+    pub fn new(
+        min_row: i32,
+        max_row: i32,
+        min_column: i32,
+        max_column: i32,
+    ) -> Rectangle {
+        Rectangle {
+            min_row,
+            max_row,
+            min_column,
+            max_column,
+        }
+    }
+
+    pub fn width(&self) -> i32 {
+        self.max_column - self.min_column
+    }
+
+    pub fn height(&self) -> i32 {
+        self.max_row - self.min_row
+    }
+
+    pub fn area(&self) -> i32 {
+        self.width() * self.height()
+    }
+}

@@ -30,13 +30,14 @@ impl Universe {
         }
     }
 
-    pub fn generate() -> Universe {
-        let mut universe = Universe::new(10, 10);
-        for _ in 0..(universe.width * universe.height) {
-            let mut un = universe.clone();
-            if un.generate_step() {
-                universe = un;
+    pub fn generate(width: usize, height: usize) -> Universe {
+        let mut universe = Universe::new(width, height);
+        for _iteration in 0..width * height * 10 {
+            let mut next_universes: Vec<Universe> = (0..5).map(|_| universe.clone()).collect();
+            for next_universe in next_universes.iter_mut() {
+                next_universe.generate_step();
             }
+            universe = next_universes.into_iter().min_by_key(|universe| universe.get_score()).unwrap_or(universe);
         }
         universe
     }
@@ -46,29 +47,23 @@ impl Universe {
 
         // First we pick a random position in the universe
         let p1 = self.random_position();
-        println!("p1: {}", p1);
         let g1 = self.get_galaxy(&p1);
 
         // Then we pick one of the adjacent positions that is not already a neighbour. If there isn't one, we abort
         let p2_option = self.adjacent_non_neighbours(&p1).choose(&mut rng).cloned();
         if p2_option.is_none() {
-            println!("p1 has no adjacent non neighbours");
             return false;
         }
         let p2 = p2_option.unwrap();
-        println!("p2: {}", p2);
 
         // If removing p2 from g2 makes the galaxy disconnected, abort
         let g2 = self.get_galaxy(&p2);
         let g2_without_p2 = g2.without_position(&p2);
         if !g2_without_p2.is_connected() {
-            println!("g2 without p2 is disconnected");
             return false;
         }
         let p5 = g2.mirror_position(&p2);
-        println!("p5: {}", p5);
         if !g2_without_p2.is_symmetric() && !g2_without_p2.without_position(&p5).is_connected() {
-            println!("g2 without p2 and p5 is disconnected");
             return false;
         }
 
@@ -76,23 +71,18 @@ impl Universe {
         // If g1 is not symmetric, we need to do some additional work to make it so
         if !g1_with_p2.is_symmetric() {
             let p3 = g1.mirror_position(&p2);
-            println!("p3: {}", p3);
             // If p3 is outside the universe, abort
             if self.is_outside(&p3) {
-                println!("p3 is outside");
                 return false;
             }
             let g3 = self.get_galaxy(&p3);
             let g3_without_p3 = g3.without_position(&p3);
             if !g3_without_p3.is_connected() {
-                println!("g3 without p3 is disconnected");
                 return false;
             }
             if !g3_without_p3.is_symmetric() {
                 let p4 = g3.mirror_position(&p3);
-                println!("p4: {}", p4);
                 if !g3_without_p3.without_position(&p4).is_connected() {
-                    println!("g3 without p3 and p4 is disconnected");
                     return false;
                 }
                 assert!(g3.contains_position(&p4), "assertion failed: galaxy of {} should contain {}:\n{}", p3, p4, self);
@@ -119,6 +109,7 @@ impl Universe {
         }
     }
 
+    /// Metric of how "cool" is the universe is. Lower is better.
     pub fn get_score(&self) -> i64 {
         let mut score: i64 = 0;
 
@@ -130,13 +121,13 @@ impl Universe {
                 let up = Position::new(row - 1, col);
                 let down = Position::new(row, col);
                 if self.are_neighbours(&up, &down) {
-                    score -= current_length.pow(2);
+                    score += current_length.pow(2);
                     current_length = 0;
                 } else {
                     current_length += 1;
                 }
             }
-            score -= current_length.pow(2);
+            score += current_length.pow(2);
         }
         for col in 1..self.width as i32 {
             let mut current_length: i64 = 0;
@@ -144,13 +135,13 @@ impl Universe {
                 let left = Position::new(row, col - 1);
                 let right = Position::new(row, col);
                 if self.are_neighbours(&left, &right) {
-                    score -= current_length.pow(2);
+                    score += current_length.pow(2);
                     current_length = 0;
                 } else {
                     current_length += 1;
                 }
             }
-            score -= current_length.pow(2);
+            score += current_length.pow(2);
         }
 
         score
