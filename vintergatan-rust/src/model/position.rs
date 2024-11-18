@@ -72,6 +72,12 @@ impl From<(usize, usize)> for Position {
     }
 }
 
+impl From<(i32, i32)> for Position {
+    fn from((row, column): (i32, i32)) -> Self {
+        Position::new(row, column)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::fmt::Debug;

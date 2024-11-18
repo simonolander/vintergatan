@@ -1,3 +1,5 @@
+use crate::model::position::Position;
+
 #[derive(Eq, PartialEq, Default)]
 pub struct Rectangle {
     pub min_row: i32,
@@ -31,5 +33,13 @@ impl Rectangle {
 
     pub fn area(&self) -> i32 {
         self.width() * self.height()
+    }
+
+    pub fn positions(&self) -> Vec<Position> {
+        (self.min_row..self.max_row).flat_map(
+            |row| (self.min_column..self.max_column).map(
+                move |column| Position::new(row, column)
+            )
+        ).collect()
     }
 }

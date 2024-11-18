@@ -32,8 +32,10 @@ impl Universe {
 
     pub fn generate(width: usize, height: usize) -> Universe {
         let mut universe = Universe::new(width, height);
-        for _iteration in 0..width * height * 10 {
-            let mut next_universes: Vec<Universe> = (0..5).map(|_| universe.clone()).collect();
+        let iterations = width * height * 10;
+        let branches = 5;
+        for _iteration in 0..iterations {
+            let mut next_universes: Vec<Universe> = (0..branches).map(|_| universe.clone()).collect();
             for next_universe in next_universes.iter_mut() {
                 next_universe.generate_step();
             }
@@ -113,8 +115,7 @@ impl Universe {
     pub fn get_score(&self) -> i64 {
         let mut score: i64 = 0;
 
-        // Remove points for long, straight borders.
-        // First horizontal borders, than vertical
+        // Add points for long, straight, horizontal borders
         for row in 1..self.height as i32 {
             let mut current_length: i64 = 0;
             for col in 0..self.width as i32 {
@@ -129,6 +130,7 @@ impl Universe {
             }
             score += current_length.pow(2);
         }
+        // Add points for long, straight, vertical borders
         for col in 1..self.width as i32 {
             let mut current_length: i64 = 0;
             for row in 0..self.height as i32 {
@@ -143,6 +145,8 @@ impl Universe {
             }
             score += current_length.pow(2);
         }
+
+        // Add points for big rectangles
 
         score
     }

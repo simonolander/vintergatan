@@ -1,8 +1,8 @@
-use std::cmp::{max, min};
-use std::collections::HashSet;
-
+use itertools::Itertools;
 use petgraph::algo::connected_components;
 use petgraph::graphmap::UnGraphMap;
+use std::cmp::{max, min};
+use std::collections::HashSet;
 
 use crate::model::position::Position;
 use crate::model::rectangle::Rectangle;
@@ -126,9 +126,84 @@ impl Galaxy {
         g
     }
 
-    ///
+    /**
+     * Returns the rectangles that make up the galaxy, by finding the largest rectangle, subtracting
+     * it from the galaxy, finding the next largest rectangle, and so forth.
+     */
     pub fn rectangles(&self) -> Vec<Rectangle> {
-        vec![]
+        Self::rectangles_internal(self.positions.clone())
+    }
+
+    fn rectangles_internal(mut positions: HashSet<Position>) -> Vec<Rectangle> {
+        if positions.is_empty() {
+            return vec![];
+        }
+
+        let min_col = positions.iter().map(|p| p.column).min().unwrap();
+        let min_row = positions.iter().map(|p| p.row).min().unwrap();
+        let max_col = positions.iter().map(|p| p.column).max().unwrap();
+        let max_row = positions.iter().map(|p| p.row).max().unwrap();
+
+        let width = max_col.abs_diff(min_col) as usize;
+        let mut height = vec![0; width];
+        let mut left = vec![min_col; width];
+        let mut right = vec![max_col; width];
+
+        let mut max_rectangle = Rectangle::default();
+
+        for row in min_row..=max_row {
+            for col in min_col..=max_col {
+                let index = col - min_col;
+                let p = Position::new(row, col);
+                if positions.contains(&p) {
+                    height[index] += 1;
+                } else {
+                    height[index] = 0;
+                }
+            }
+            let mut current_left = min_col;
+            for col in min_col..=max_col {
+                let index = col - min_col;
+                let p = Position::new(row, col);
+                if positions.contains(&p) {
+                    left[index] = max(left[index], current_left);
+                } else {
+                    left[index] = 0;
+                    current_left = col + 1;
+                }
+            }
+            let mut current_right = max_col;
+            for col in (min_col..=max_col).rev() {
+                let index = col - min_col;
+                let p = Position::new(row, col);
+                if positions.contains(&p) {
+                    right[index] = max(right[index], current_right);
+                } else {
+                    right[index] = max_col;
+                    current_right = col;
+                }
+            }
+            for col in min_col..=max_col {
+                let index = col - min_col;
+                let rect = Rectangle {
+                    min_row: row - height[col],
+                    max_row: row,
+                    min_column: left[col],
+                    max_column: right[col],
+                };
+                if rect.area() > max_rectangle.area() {
+                    max_rectangle = rect;
+                }
+            }
+        }
+
+        for p in &max_rectangle.positions() {
+            positions.remove(p);
+        }
+        let mut rectangles = Self::rectangles_internal(positions);
+        rectangles.push(max_rectangle);
+
+        rectangles
     }
 }
 
