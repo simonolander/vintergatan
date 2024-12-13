@@ -1,20 +1,19 @@
 use crate::model::position::Position;
 
-#[derive(Eq, PartialEq, Default)]
+#[derive(Eq, PartialEq, Default, Debug)]
 pub struct Rectangle {
+    /** Smallest row index, inclusive */
     pub min_row: i32,
+    /** Largest row index, exclusive */
     pub max_row: i32,
+    /** Smallest column index, inclusive */
     pub min_column: i32,
+    /** Largest column index, exclusive */
     pub max_column: i32,
 }
 
 impl Rectangle {
-    pub fn new(
-        min_row: i32,
-        max_row: i32,
-        min_column: i32,
-        max_column: i32,
-    ) -> Rectangle {
+    pub fn new(min_row: i32, max_row: i32, min_column: i32, max_column: i32) -> Rectangle {
         Rectangle {
             min_row,
             max_row,
@@ -36,10 +35,44 @@ impl Rectangle {
     }
 
     pub fn positions(&self) -> Vec<Position> {
-        (self.min_row..self.max_row).flat_map(
-            |row| (self.min_column..self.max_column).map(
-                move |column| Position::new(row, column)
-            )
-        ).collect()
+        (self.min_row..self.max_row)
+            .flat_map(|row| {
+                (self.min_column..self.max_column).map(move |column| Position::new(row, column))
+            })
+            .collect()
+    }
+}
+
+mod test {
+    use crate::model::rectangle::Rectangle;
+    use proptest::prelude::*;
+
+    impl Arbitrary for Rectangle {
+        type Parameters = ();
+
+        fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
+            let rows = any::<(i8, i8)>().prop_filter(
+                "Min row should be smaller or equal to max row",
+                |(min_row, max_row)| min_row <= max_row,
+            );
+
+            // Generate valid `min_column` and `max_column` where `min_column <= max_column`
+            let columns = any::<(i8, i8)>().prop_filter(
+                "Min column should be smaller or equal to max column",
+                |(min_col, max_col)| min_col <= max_col,
+            );
+
+            // Combine row and column strategies into a Rectangle
+            (rows, columns)
+                .prop_map(|((min_row, max_row), (min_column, max_column))| Rectangle {
+                    min_row: min_row as i32,
+                    max_row: max_row as i32,
+                    min_column: min_column as i32,
+                    max_column: max_column as i32,
+                })
+                .boxed()
+        }
+
+        type Strategy = BoxedStrategy<Self>;
     }
 }

@@ -1,11 +1,9 @@
-use itertools::Itertools;
+use crate::model::position::Position;
+use crate::model::rectangle::Rectangle;
 use petgraph::algo::connected_components;
 use petgraph::graphmap::UnGraphMap;
 use std::cmp::{max, min};
 use std::collections::HashSet;
-
-use crate::model::position::Position;
-use crate::model::rectangle::Rectangle;
 
 #[derive(Clone)]
 pub struct Galaxy {
@@ -18,8 +16,10 @@ pub struct Galaxy {
 /// - It must contain its center
 /// - It must be rotationally symmetric
 impl Galaxy {
-    pub fn new(positions: impl IntoIterator<Item=Position>) -> Galaxy {
-        Galaxy { positions: positions.into_iter().collect() }
+    pub fn new(positions: impl IntoIterator<Item = Position>) -> Galaxy {
+        Galaxy {
+            positions: positions.into_iter().collect(),
+        }
     }
 
     /// Returns the center of this galaxy is half-steps.
@@ -37,9 +37,9 @@ impl Galaxy {
 
     /// Returns the smallest rectangle that contains the galaxy.
     pub fn bounding_rectangle(&self) -> Rectangle {
-        self.positions.iter().fold(
-            Option::<Rectangle>::default(),
-            |acc, p| match acc {
+        self.positions
+            .iter()
+            .fold(Option::<Rectangle>::default(), |acc, p| match acc {
                 None => Some(Rectangle {
                     min_row: p.row,
                     max_row: p.row,
@@ -51,9 +51,9 @@ impl Galaxy {
                     max(p.row, rect.max_row),
                     min(p.column, rect.min_column),
                     max(p.column, rect.max_column),
-                ))
-            },
-        ).unwrap_or(Rectangle::default())
+                )),
+            })
+            .unwrap_or(Rectangle::default())
     }
 
     pub fn mirror_position(&self, p: &Position) -> Position {
@@ -68,7 +68,9 @@ impl Galaxy {
     }
 
     pub fn is_symmetric(&self) -> bool {
-        self.positions.iter().all(|p| self.contains_position(&self.mirror_position(p)))
+        self.positions
+            .iter()
+            .all(|p| self.contains_position(&self.mirror_position(p)))
     }
 
     pub fn is_connected(&self) -> bool {
@@ -111,7 +113,10 @@ impl Galaxy {
     }
 
     pub fn is_valid(&self) -> bool {
-        !self.positions.is_empty() && self.contains_center() && self.is_connected() && self.is_symmetric()
+        !self.positions.is_empty()
+            && self.contains_center()
+            && self.is_connected()
+            && self.is_symmetric()
     }
 
     pub fn with_position(&self, p: &Position) -> Galaxy {
@@ -141,8 +146,8 @@ impl Galaxy {
 
         let min_col = positions.iter().map(|p| p.column).min().unwrap();
         let min_row = positions.iter().map(|p| p.row).min().unwrap();
-        let max_col = positions.iter().map(|p| p.column).max().unwrap();
-        let max_row = positions.iter().map(|p| p.row).max().unwrap();
+        let max_col = positions.iter().map(|p| p.column).max().unwrap() + 1;
+        let max_row = positions.iter().map(|p| p.row).max().unwrap() + 1;
 
         let width = max_col.abs_diff(min_col) as usize;
         let mut height = vec![0; width];
@@ -151,9 +156,9 @@ impl Galaxy {
 
         let mut max_rectangle = Rectangle::default();
 
-        for row in min_row..=max_row {
-            for col in min_col..=max_col {
-                let index = col - min_col;
+        for row in min_row..max_row {
+            for col in min_col..max_col {
+                let index = (col - min_col) as usize;
                 let p = Position::new(row, col);
                 if positions.contains(&p) {
                     height[index] += 1;
@@ -162,8 +167,8 @@ impl Galaxy {
                 }
             }
             let mut current_left = min_col;
-            for col in min_col..=max_col {
-                let index = col - min_col;
+            for col in min_col..max_col {
+                let index = (col - min_col) as usize;
                 let p = Position::new(row, col);
                 if positions.contains(&p) {
                     left[index] = max(left[index], current_left);
@@ -173,8 +178,8 @@ impl Galaxy {
                 }
             }
             let mut current_right = max_col;
-            for col in (min_col..=max_col).rev() {
-                let index = col - min_col;
+            for col in (min_col..max_col).rev() {
+                let index = (col - min_col) as usize;
                 let p = Position::new(row, col);
                 if positions.contains(&p) {
                     right[index] = max(right[index], current_right);
@@ -183,13 +188,13 @@ impl Galaxy {
                     current_right = col;
                 }
             }
-            for col in min_col..=max_col {
-                let index = col - min_col;
+            for col in min_col..max_col {
+                let index = (col - min_col) as usize;
                 let rect = Rectangle {
-                    min_row: row - height[col],
-                    max_row: row,
-                    min_column: left[col],
-                    max_column: right[col],
+                    min_row: row - height[index] + 1,
+                    max_row: row + 1,
+                    min_column: left[index],
+                    max_column: right[index],
                 };
                 if rect.area() > max_rectangle.area() {
                     max_rectangle = rect;
@@ -223,10 +228,22 @@ mod tests {
         assert_eq!(Position::new(0, 2), galaxy(&[(0, 1)]).center());
         assert_eq!(Position::new(1, 0), galaxy(&[(0, 0), (1, 0)]).center());
         assert_eq!(Position::new(2, 0), galaxy(&[(1, 0)]).center());
-        assert_eq!(Position::new(0, 2), galaxy(&[(0, 0), (0, 1), (0, 2)]).center());
-        assert_eq!(Position::new(14, 6), galaxy(&[(6, 3), (7, 3), (8, 3)]).center());
-        assert_eq!(Position::new(14, 7), galaxy(&[(6, 3), (7, 3), (7, 4), (8, 4)]).center());
-        assert_eq!(Position::new(1, 1), galaxy(&[(0, 0), (0, 1), (1, 0), (1, 1)]).center());
+        assert_eq!(
+            Position::new(0, 2),
+            galaxy(&[(0, 0), (0, 1), (0, 2)]).center()
+        );
+        assert_eq!(
+            Position::new(14, 6),
+            galaxy(&[(6, 3), (7, 3), (8, 3)]).center()
+        );
+        assert_eq!(
+            Position::new(14, 7),
+            galaxy(&[(6, 3), (7, 3), (7, 4), (8, 4)]).center()
+        );
+        assert_eq!(
+            Position::new(1, 1),
+            galaxy(&[(0, 0), (0, 1), (1, 0), (1, 1)]).center()
+        );
     }
 
     #[test]
@@ -236,9 +253,56 @@ mod tests {
         assert_eq!(Position::new(0, 2), galaxy(&[(0, 1)]).center());
         assert_eq!(Position::new(1, 0), galaxy(&[(0, 0), (1, 0)]).center());
         assert_eq!(Position::new(2, 0), galaxy(&[(1, 0)]).center());
-        assert_eq!(Position::new(0, 2), galaxy(&[(0, 0), (0, 1), (0, 2)]).center());
-        assert_eq!(Position::new(14, 6), galaxy(&[(6, 3), (7, 3), (8, 3)]).center());
-        assert_eq!(Position::new(14, 7), galaxy(&[(6, 3), (7, 3), (7, 4), (8, 4)]).center());
-        assert_eq!(Position::new(1, 1), galaxy(&[(0, 0), (0, 1), (1, 0), (1, 1)]).center());
+        assert_eq!(
+            Position::new(0, 2),
+            galaxy(&[(0, 0), (0, 1), (0, 2)]).center()
+        );
+        assert_eq!(
+            Position::new(14, 6),
+            galaxy(&[(6, 3), (7, 3), (8, 3)]).center()
+        );
+        assert_eq!(
+            Position::new(14, 7),
+            galaxy(&[(6, 3), (7, 3), (7, 4), (8, 4)]).center()
+        );
+        assert_eq!(
+            Position::new(1, 1),
+            galaxy(&[(0, 0), (0, 1), (1, 0), (1, 1)]).center()
+        );
+    }
+
+    mod rectangles {
+        use crate::model::galaxy::Galaxy;
+        use crate::model::position::Position;
+        use crate::model::rectangle::Rectangle;
+        use proptest::proptest;
+
+        #[test]
+        fn empty_galaxy_should_have_no_rectangles() {
+            let galaxy = Galaxy::new(vec![]);
+            assert_eq!(galaxy.rectangles(), vec![]);
+        }
+
+        fn galaxy_from_rect(rect: &Rectangle) -> Galaxy {
+            let mut positions = vec![];
+            for row in rect.min_row..rect.max_row {
+                for column in rect.min_column..rect.max_column {
+                    positions.push(Position { row, column });
+                }
+            }
+            Galaxy::new(positions)
+        }
+
+        proptest! {
+            #[test]
+            fn rectangle_galaxy_should_have_single_rectangle(rect: Rectangle) {
+                if !rect.positions().is_empty() {
+                    let galaxy = galaxy_from_rect(&rect);
+                    let rects = galaxy.rectangles();
+                    assert_eq!(rects.len(), 1);
+                    assert_eq!(rects[0], rect);
+                }
+            }
+        }
     }
 }
