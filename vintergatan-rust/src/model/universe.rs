@@ -159,6 +159,7 @@ impl Universe {
             }
             score += current_length.pow(2);
         }
+
         // Add points for long, straight, vertical borders
         for col in 1..self.width as i32 {
             let mut current_length: i64 = 0;
@@ -176,6 +177,12 @@ impl Universe {
         }
 
         // Add points for big rectangles
+        for galaxy in self.get_galaxies() {
+            for rect in galaxy.rectangles() {
+                let area = rect.area() as i64;
+                score += area.pow(2);
+            }
+        }
 
         score
     }
