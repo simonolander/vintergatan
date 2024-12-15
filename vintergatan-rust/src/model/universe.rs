@@ -1,11 +1,12 @@
+use crate::model::galaxy::Galaxy;
+use crate::model::position::Position;
 use petgraph::graphmap::UnGraphMap;
 use petgraph::visit::{Dfs, Walker};
 use rand::prelude::SliceRandom;
+use rand::rngs::StdRng;
+use rand::{random, Rng, SeedableRng};
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
-
-use crate::model::galaxy::Galaxy;
-use crate::model::position::Position;
 
 #[derive(Clone)]
 pub struct Universe {
@@ -34,11 +35,14 @@ impl Universe {
         let mut universe = Universe::new(width, height);
         let iterations = width * height * 10;
         let branches = 5;
+        let seed: u64 = random();
+        println!("Seed: {}", seed);
+        let mut rng = StdRng::seed_from_u64(16930399551136634216);
         for _iteration in 0..iterations {
             let mut next_universes: Vec<Universe> =
                 (0..branches).map(|_| universe.clone()).collect();
             for next_universe in next_universes.iter_mut() {
-                next_universe.generate_step();
+                next_universe.generate_step(&mut rng);
             }
             universe = next_universes
                 .into_iter()
@@ -48,15 +52,13 @@ impl Universe {
         universe
     }
 
-    pub fn generate_step(&mut self) -> bool {
-        let mut rng = rand::thread_rng();
-
+    fn generate_step(&mut self, rng: &mut impl Rng) -> bool {
         // First we pick a random position in the universe
-        let p1 = self.random_position();
+        let p1 = self.random_position(rng);
         let g1 = self.get_galaxy(&p1);
 
         // Then we pick one of the adjacent positions that is not already a neighbour. If there isn't one, we abort
-        let p2_option = self.adjacent_non_neighbours(&p1).choose(&mut rng).cloned();
+        let p2_option = self.adjacent_non_neighbours(&p1).choose(rng).cloned();
         if p2_option.is_none() {
             return false;
         }
@@ -213,8 +215,8 @@ impl Universe {
         }
     }
 
-    pub fn random_position(&self) -> Position {
-        Position::random(self.width, self.height)
+    pub fn random_position(&self, rng: &mut impl Rng) -> Position {
+        Position::random(self.width, self.height, rng)
     }
 
     pub fn adjacent_positions(&self, p: &Position) -> Vec<Position> {

@@ -13,8 +13,7 @@ impl Position {
         Position { row, column }
     }
 
-    pub fn random(width: usize, height: usize) -> Position {
-        let mut rng = rand::thread_rng();
+    pub fn random(width: usize, height: usize, rng: &mut impl Rng) -> Position {
         let row = rng.gen_range(0..height) as i32;
         let column = rng.gen_range(0..width) as i32;
         Position { row, column }

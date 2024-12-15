@@ -149,10 +149,8 @@ impl Galaxy {
         self.positions.iter()
     }
 
-    /**
-     * Returns the rectangles that make up the galaxy, by finding the largest rectangle, subtracting
-     * it from the galaxy, finding the next largest rectangle, and so forth.
-     */
+    /// Returns the rectangles that make up the galaxy, by finding the largest rectangle, subtracting
+    /// it from the galaxy, finding the next largest rectangle, and so forth.
     pub fn rectangles(&self) -> Vec<Rectangle> {
         Self::rectangles_internal(self.positions.clone())
     }
