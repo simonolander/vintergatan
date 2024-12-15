@@ -4,6 +4,7 @@ use petgraph::algo::connected_components;
 use petgraph::graphmap::UnGraphMap;
 use std::cmp::{max, min};
 use std::collections::HashSet;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone)]
 pub struct Galaxy {
@@ -16,10 +17,23 @@ pub struct Galaxy {
 /// - It must contain its center
 /// - It must be rotationally symmetric
 impl Galaxy {
-    pub fn new(positions: impl IntoIterator<Item = Position>) -> Galaxy {
+    pub fn new() -> Galaxy {
+        Galaxy { positions: HashSet::new() }
+    }
+
+    pub fn from_positions(positions: impl IntoIterator<Item = Position>) -> Galaxy {
         Galaxy {
             positions: positions.into_iter().collect(),
         }
+    }
+
+    pub fn from_rect(rect: &Rectangle) -> Galaxy {
+        Self::from_positions(rect.positions())
+    }
+
+    /// Returns the number of positions in this galaxy
+    pub fn size(&self) -> usize {
+        self.positions.len()
     }
 
     /// Returns the center of this galaxy is half-steps.
@@ -131,6 +145,10 @@ impl Galaxy {
         g
     }
 
+    pub fn get_positions(&self) -> impl Iterator<Item = &Position> {
+        self.positions.iter()
+    }
+
     /**
      * Returns the rectangles that make up the galaxy, by finding the largest rectangle, subtracting
      * it from the galaxy, finding the next largest rectangle, and so forth.
@@ -218,7 +236,7 @@ mod tests {
     use crate::model::position::Position;
 
     fn galaxy(positions: &[(i32, i32)]) -> Galaxy {
-        Galaxy::new(positions.iter().map(|&(row, col)| Position::new(row, col)))
+        Galaxy::from_positions(positions.iter().map(|&(row, col)| Position::new(row, col)))
     }
 
     #[test]
@@ -272,14 +290,16 @@ mod tests {
     }
 
     mod rectangles {
+        use itertools::Itertools;
         use crate::model::galaxy::Galaxy;
         use crate::model::position::Position;
         use crate::model::rectangle::Rectangle;
         use proptest::proptest;
+        use crate::model::universe::Universe;
 
         #[test]
         fn empty_galaxy_should_have_no_rectangles() {
-            let galaxy = Galaxy::new(vec![]);
+            let galaxy = Galaxy::from_positions(vec![]);
             assert_eq!(galaxy.rectangles(), vec![]);
         }
 
@@ -290,7 +310,7 @@ mod tests {
                     positions.push(Position { row, column });
                 }
             }
-            Galaxy::new(positions)
+            Galaxy::from_positions(positions)
         }
 
         proptest! {
@@ -303,6 +323,31 @@ mod tests {
                     assert_eq!(rects[0], rect);
                 }
             }
+
+        }
+
+        #[test]
+        fn s_galaxy() {
+            /*
+             *   ┌───┐    ┌─┬─┐
+             *   │ ┌─┘ -> │ ├─┘
+             * ┌─┘ │    ┌─┤ │
+             * └───┘    └─┴─┘
+             */
+            let mut galaxy = Galaxy::new();
+            galaxy.positions.insert(Position::new(0, 2));
+            galaxy.positions.insert(Position::new(0, 1));
+            galaxy.positions.insert(Position::new(1, 1));
+            galaxy.positions.insert(Position::new(2, 1));
+            galaxy.positions.insert(Position::new(2, 0));
+
+            let actual: Vec<Rectangle> = galaxy.rectangles().into_iter().sorted().collect();
+            let expected: Vec<Rectangle> = vec![
+                Rectangle {min_row: 2, max_row: 3, min_column: 0, max_column: 1},
+                Rectangle {min_row: 0, max_row: 3, min_column: 1, max_column: 2},
+                Rectangle {min_row: 0, max_row: 1, min_column: 2, max_column: 3},
+            ].into_iter().sorted().collect();
+            assert_eq!(expected, actual);
         }
     }
 }

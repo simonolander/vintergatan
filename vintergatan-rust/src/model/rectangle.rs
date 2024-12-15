@@ -1,6 +1,6 @@
 use crate::model::position::Position;
 
-#[derive(Eq, PartialEq, Default, Debug)]
+#[derive(Eq, PartialEq, Default, Debug, Ord, PartialOrd, Copy, Clone)]
 pub struct Rectangle {
     /** Smallest row index, inclusive */
     pub min_row: i32,

@@ -1,8 +1,8 @@
-use std::fmt::{Display, Formatter};
-
 use petgraph::graphmap::UnGraphMap;
 use petgraph::visit::{Dfs, Walker};
 use rand::prelude::SliceRandom;
+use std::collections::BTreeSet;
+use std::fmt::{Display, Formatter};
 
 use crate::model::galaxy::Galaxy;
 use crate::model::position::Position;
@@ -35,11 +35,15 @@ impl Universe {
         let iterations = width * height * 10;
         let branches = 5;
         for _iteration in 0..iterations {
-            let mut next_universes: Vec<Universe> = (0..branches).map(|_| universe.clone()).collect();
+            let mut next_universes: Vec<Universe> =
+                (0..branches).map(|_| universe.clone()).collect();
             for next_universe in next_universes.iter_mut() {
                 next_universe.generate_step();
             }
-            universe = next_universes.into_iter().min_by_key(|universe| universe.get_score()).unwrap_or(universe);
+            universe = next_universes
+                .into_iter()
+                .min_by_key(|universe| universe.get_score())
+                .unwrap_or(universe);
         }
         universe
     }
@@ -87,7 +91,13 @@ impl Universe {
                 if !g3_without_p3.without_position(&p4).is_connected() {
                     return false;
                 }
-                assert!(g3.contains_position(&p4), "assertion failed: galaxy of {} should contain {}:\n{}", p3, p4, self);
+                assert!(
+                    g3.contains_position(&p4),
+                    "assertion failed: galaxy of {} should contain {}:\n{}",
+                    p3,
+                    p4,
+                    self
+                );
                 self.remove_all_neighbours(&p4);
             }
             self.make_neighbours(&p1, &p3);
@@ -99,9 +109,28 @@ impl Universe {
         self.make_neighbours(&p1, &p2);
         for p in self.get_positions() {
             let g = self.get_galaxy(&p);
-            assert!(g.is_valid(), "assertion failed: galaxy of {} is invalid:\n{}", p, self);
+            assert!(
+                g.is_valid(),
+                "assertion failed: galaxy of {} is invalid:\n{}",
+                p,
+                self
+            );
         }
         true
+    }
+
+    /// Returns a list of galaxies in this universe, in no particular order
+    pub fn get_galaxies(&self) -> Vec<Galaxy> {
+        let mut galaxies: Vec<Galaxy> = Vec::new();
+        let mut remaining_positions: BTreeSet<Position> = self.graph.nodes().collect();
+        while let Some(position) = remaining_positions.first() {
+            let galaxy = self.get_galaxy(position);
+            for p in galaxy.get_positions() {
+                remaining_positions.remove(p);
+            }
+            galaxies.push(galaxy);
+        }
+        galaxies
     }
 
     /// Make p have no neighbours
@@ -151,6 +180,16 @@ impl Universe {
         score
     }
 
+    pub fn add_galaxy(&mut self, galaxy: &Galaxy) {
+        for p1 in galaxy.get_positions() {
+            for p2 in &self.adjacent_positions(p1) {
+                if galaxy.contains_position(p2) {
+                    self.graph.add_edge(*p1, *p2, ());
+                }
+            }
+        }
+    }
+
     /**
      * Joins p2 into the galaxy of p1, removing any previous edges from p2,
      * and adding edges to all neighbouring positions in the galaxy of p1.
@@ -180,7 +219,11 @@ impl Universe {
     }
 
     pub fn adjacent_non_neighbours(&self, p: &Position) -> Vec<Position> {
-        self.adjacent_positions(p).iter().copied().filter(|adjacent_position| !self.are_neighbours(p, adjacent_position)).collect()
+        self.adjacent_positions(p)
+            .iter()
+            .copied()
+            .filter(|adjacent_position| !self.are_neighbours(p, adjacent_position))
+            .collect()
     }
 
     pub fn are_neighbours(&self, p1: &Position, p2: &Position) -> bool {
@@ -189,7 +232,7 @@ impl Universe {
 
     pub fn get_galaxy(&self, p: &Position) -> Galaxy {
         let search = Dfs::new(&self.graph, *p);
-        Galaxy::new(search.iter(&self.graph))
+        Galaxy::from_positions(search.iter(&self.graph))
     }
 
     pub fn is_outside(&self, p: &Position) -> bool {
@@ -204,8 +247,10 @@ impl Universe {
         self.to_string()
     }
 
-    pub fn get_positions(&self) -> impl Iterator<Item=Position> + '_ {
-        (0..self.height).flat_map(|row| (0..self.width).map(move |col| (row, col))).map(|t| Position::from(t))
+    pub fn get_positions(&self) -> impl Iterator<Item = Position> + '_ {
+        (0..self.height)
+            .flat_map(|row| (0..self.width).map(move |col| (row, col)))
+            .map(|t| Position::from(t))
     }
 }
 
@@ -219,8 +264,10 @@ impl Display for Universe {
                 let top_right = bottom_right.up();
 
                 let bar_top = row != 0 && !self.are_neighbours(&top_left, &top_right);
-                let bar_right = column != self.width && !self.are_neighbours(&top_right, &bottom_right);
-                let bar_bottom = row != self.height && !self.are_neighbours(&bottom_left, &bottom_right);
+                let bar_right =
+                    column != self.width && !self.are_neighbours(&top_right, &bottom_right);
+                let bar_bottom =
+                    row != self.height && !self.are_neighbours(&bottom_left, &bottom_right);
                 let bar_left = column != 0 && !self.are_neighbours(&top_left, &bottom_left);
                 match (bar_top, bar_right, bar_bottom, bar_left) {
                     (false, false, false, false) => write!(f, "  ")?,
