@@ -200,7 +200,7 @@ impl Galaxy {
                 let index = (col - min_col) as usize;
                 let p = Position::new(row, col);
                 if positions.contains(&p) {
-                    right[index] = max(right[index], current_right);
+                    right[index] = min(right[index], current_right);
                 } else {
                     right[index] = max_col;
                     current_right = col;
