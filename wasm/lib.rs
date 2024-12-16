@@ -3,7 +3,6 @@ pub mod universe;
 
 use wasm_bindgen::prelude::*;
 use web_sys;
-use crate::universe::Universe;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.

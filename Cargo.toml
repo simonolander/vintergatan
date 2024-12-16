@@ -12,6 +12,7 @@ repository = "https://github.com/simonolander/vintergatan.git"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+path = "wasm/lib.rs"
 
 [profile.release]
 # This makes the compiled code faster and smaller, but it makes compiling slower,
