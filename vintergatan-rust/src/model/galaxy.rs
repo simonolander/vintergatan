@@ -4,9 +4,8 @@ use petgraph::algo::connected_components;
 use petgraph::graphmap::UnGraphMap;
 use std::cmp::{max, min};
 use std::collections::HashSet;
-use std::fmt::{Display, Formatter};
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Galaxy {
     positions: HashSet<Position>,
 }
@@ -18,7 +17,9 @@ pub struct Galaxy {
 /// - It must be rotationally symmetric
 impl Galaxy {
     pub fn new() -> Galaxy {
-        Galaxy { positions: HashSet::new() }
+        Galaxy {
+            positions: HashSet::new(),
+        }
     }
 
     pub fn from_positions(positions: impl IntoIterator<Item = Position>) -> Galaxy {
@@ -103,6 +104,10 @@ impl Galaxy {
         connected_components(&graph) == 1
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.positions.is_empty()
+    }
+
     pub fn contains_center(&self) -> bool {
         let center = self.center();
         let rows = if center.row % 2 == 0 {
@@ -127,10 +132,11 @@ impl Galaxy {
     }
 
     pub fn is_valid(&self) -> bool {
-        !self.positions.is_empty()
-            && self.contains_center()
-            && self.is_connected()
-            && self.is_symmetric()
+        !self.is_empty() && self.contains_center() && self.is_connected() && self.is_symmetric()
+    }
+
+    pub fn is_empty_or_valid(&self) -> bool {
+        self.is_empty() || self.is_valid()
     }
 
     pub fn with_position(&self, p: &Position) -> Galaxy {
@@ -143,6 +149,16 @@ impl Galaxy {
         let mut g = self.clone();
         g.positions.remove(p);
         g
+    }
+
+    /// Removes the given position from the galaxy, leaving it in a potentially invalid state
+    pub fn remove_position(&mut self, p: &Position) {
+        self.positions.remove(p);
+    }
+
+    /// Adds the given position from the galaxy, leaving it in a potentially invalid state
+    pub fn add_position(&mut self, p: Position) {
+        self.positions.insert(p);
     }
 
     pub fn get_positions(&self) -> impl Iterator<Item = &Position> {
@@ -288,12 +304,12 @@ mod tests {
     }
 
     mod rectangles {
-        use itertools::Itertools;
         use crate::model::galaxy::Galaxy;
         use crate::model::position::Position;
         use crate::model::rectangle::Rectangle;
-        use proptest::proptest;
         use crate::model::universe::Universe;
+        use itertools::Itertools;
+        use proptest::proptest;
 
         #[test]
         fn empty_galaxy_should_have_no_rectangles() {
@@ -341,10 +357,28 @@ mod tests {
 
             let actual: Vec<Rectangle> = galaxy.rectangles().into_iter().sorted().collect();
             let expected: Vec<Rectangle> = vec![
-                Rectangle {min_row: 2, max_row: 3, min_column: 0, max_column: 1},
-                Rectangle {min_row: 0, max_row: 3, min_column: 1, max_column: 2},
-                Rectangle {min_row: 0, max_row: 1, min_column: 2, max_column: 3},
-            ].into_iter().sorted().collect();
+                Rectangle {
+                    min_row: 2,
+                    max_row: 3,
+                    min_column: 0,
+                    max_column: 1,
+                },
+                Rectangle {
+                    min_row: 0,
+                    max_row: 3,
+                    min_column: 1,
+                    max_column: 2,
+                },
+                Rectangle {
+                    min_row: 0,
+                    max_row: 1,
+                    min_column: 2,
+                    max_column: 3,
+                },
+            ]
+            .into_iter()
+            .sorted()
+            .collect();
             assert_eq!(expected, actual);
         }
     }
