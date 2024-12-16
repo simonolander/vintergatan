@@ -7,7 +7,8 @@ fn main() {
         let height = width;
         let universe = Universe::generate(width, height);
         println!("{}", universe);
-        println!("{}", universe.get_score());
+        println!("Score: {}", universe.get_score());
+        println!()
     }
     // let largest_galaxy = universe.get_galaxies().iter().max_by_key(|g| g.size()).unwrap().clone();
     // let mut u2 = Universe::new(width, height);

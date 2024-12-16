@@ -312,7 +312,9 @@ impl Display for Universe {
                     (true, true, true, true) => write!(f, "┼─")?,
                 }
             }
-            write!(f, "\n")?;
+            if row != self.height {
+                write!(f, "\n")?;
+            }
         }
         Ok(())
     }
