@@ -17,22 +17,19 @@ pub struct Universe {
     graph: UnGraphMap<Position, ()>,
 }
 
-impl Universe {
-    pub fn new(width: usize, height: usize) -> Universe {
-        let mut graph: UnGraphMap<Position, ()> = UnGraphMap::new();
-        for row in 0..height {
-            for column in 0..width {
-                let position = Position::from((row, column));
-                graph.add_node(position);
-            }
-        }
-        Universe {
-            width,
-            height,
-            graph,
-        }
-    }
+#[wasm_bindgen]
+pub fn generate_universe() -> Universe {
+    Universe::generate(10, 10)
+}
 
+#[wasm_bindgen]
+pub fn to_string(universe: &Universe) -> String {
+    universe.to_string()
+}
+
+#[wasm_bindgen]
+impl Universe {
+    #[wasm_bindgen]
     pub fn generate(width: usize, height: usize) -> Universe {
         let mut universe = Universe::new(width, height);
         let iterations = width * height * 10;
@@ -60,6 +57,28 @@ impl Universe {
         }
         assert!(universe.is_valid());
         universe
+    }
+
+    #[wasm_bindgen(js_name = toString)]
+    pub fn to_string_js(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl Universe {
+    pub fn new(width: usize, height: usize) -> Universe {
+        let mut graph: UnGraphMap<Position, ()> = UnGraphMap::new();
+        for row in 0..height {
+            for column in 0..width {
+                let position = Position::from((row, column));
+                graph.add_node(position);
+            }
+        }
+        Universe {
+            width,
+            height,
+            graph,
+        }
     }
 
     fn generate_step(&mut self, rng: &mut impl Rng) -> bool {

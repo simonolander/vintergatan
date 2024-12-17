@@ -18,15 +18,18 @@ path = "library/lib.rs"
 # This makes the compiled code faster and smaller, but it makes compiling slower,
 # so it's only enabled in release mode.
 lto = true
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"
 
 [features]
 # If you uncomment this line, it will enable `wee_alloc`:
 #default = ["wee_alloc"]
+default = ["console_error_panic_hook"]
 
 [dependencies]
 # The `wasm-bindgen` crate provides the bare minimum functionality needed
 # to interact with JavaScript.
-wasm-bindgen = "0.2.99"
+wasm-bindgen = "0.2.84"
 js-sys = "0.3.69"
 itertools = "0.13.0"
 petgraph = "0.6.5"
@@ -37,6 +40,12 @@ getrandom = {version = "0.2.15", features = ["js"]}
 # compared to the default allocator's ~10K. However, it is slower than the default
 # allocator, so it's not enabled by default.
 wee_alloc = { version = "0.4.5", optional = true }
+
+# The `console_error_panic_hook` crate provides better debugging of panics by
+# logging them with `console.error`. This is great for development, but requires
+# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
+# code size when deploying.
+console_error_panic_hook = { version = "0.1.7", optional = true }
 
 # The `web-sys` crate allows you to interact with the various browser APIs,
 # like the DOM.
@@ -53,7 +62,7 @@ console_error_panic_hook = "0.1.5"
 
 # These crates are used for running unit tests.
 [dev-dependencies]
-wasm-bindgen-test = "0.3.42"
+wasm-bindgen-test = "0.3.34"
 proptest = "1.6.0"
 futures = "0.3.30"
 js-sys = "0.3.69"

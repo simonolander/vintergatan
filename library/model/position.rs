@@ -82,7 +82,7 @@ mod tests {
     use std::fmt::Debug;
 
     use proptest::prelude::*;
-
+    use rand::thread_rng;
     use crate::model::position::Position;
 
     fn prop_assert_eq_vec_orderless<T: Eq + Debug>(left: Vec<T>, right: Vec<T>) -> Result<(), TestCaseError> {
@@ -137,7 +137,7 @@ mod tests {
 
         #[test]
         fn test_random(width in 1..i32::MAX, height in 1..i32::MAX) {
-            let p = Position::random(width as usize, height as usize);
+            let p = Position::random(width as usize, height as usize, &mut thread_rng());
             prop_assert!(p.column >= 0);
             prop_assert!(p.column < width);
             prop_assert!(p.row >= 0);

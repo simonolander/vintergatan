@@ -27,7 +27,6 @@ module.exports = {
         path.resolve(__dirname, 'www'),
       ],
     }),
-
     new WasmPackPlugin({
       crateDirectory: __dirname,
     }),
