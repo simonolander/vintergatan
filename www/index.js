@@ -1,4 +1,3 @@
-import {greet} from '../pkg';
-import("../pkg/index.js").catch(console.error);
+import {asdf, greet} from '../pkg';
 
-// greet("World")
+asdf()

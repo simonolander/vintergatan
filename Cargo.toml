@@ -29,6 +29,7 @@ lto = true
 wasm-bindgen = "0.2.92"
 petgraph = "0.6.5"
 js-sys = "0.3.69"
+engine = { path = "engine" }
 
 # `wee_alloc` is a tiny allocator for wasm that is only ~1K in code size
 # compared to the default allocator's ~10K. However, it is slower than the default

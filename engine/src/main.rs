@@ -1,5 +1,7 @@
-use vintergatan_rust::model::galaxy::Galaxy;
-use vintergatan_rust::model::universe::Universe;
+use std::thread::sleep;
+use std::time::Duration;
+use engine::model::galaxy::Galaxy;
+use engine::model::universe::Universe;
 
 fn main() {
     loop {
@@ -8,7 +10,8 @@ fn main() {
         let universe = Universe::generate(width, height);
         println!("{}", universe);
         println!("Score: {}", universe.get_score());
-        println!()
+        println!();
+        sleep(Duration::from_millis(1000));
     }
     // let largest_galaxy = universe.get_galaxies().iter().max_by_key(|g| g.size()).unwrap().clone();
     // let mut u2 = Universe::new(width, height);

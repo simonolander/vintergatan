@@ -1,8 +1,8 @@
-pub mod random;
 pub mod universe;
 
 use wasm_bindgen::prelude::*;
 use web_sys;
+use engine::model::universe::Universe;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
@@ -20,6 +20,17 @@ extern "C" {
 #[wasm_bindgen]
 pub fn greet(name: &str) {
     alert(&format!("Hello, {}!", name));
+}
+
+#[wasm_bindgen]
+pub fn generate_universe() -> Universe {
+    let mut universe = Universe::generate(10, 10);
+    return universe;
+}
+
+#[wasm_bindgen]
+pub fn asdf() {
+    alert("Hello, asdf!");
 }
 
 // This is like the `main` function, except for JavaScript.
