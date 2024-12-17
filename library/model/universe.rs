@@ -29,6 +29,12 @@ pub fn to_string(universe: &Universe) -> String {
 
 #[wasm_bindgen]
 impl Universe {
+
+    #[wasm_bindgen(getter)]
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
     #[wasm_bindgen]
     pub fn generate(width: usize, height: usize) -> Universe {
         let mut universe = Universe::new(width, height);

@@ -2,12 +2,20 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vintergatan</title>
     <link rel="icon" href="./favicon.ico">
     <link rel="stylesheet" href="./index.css">
 </head>
 <body>
-<pre id="board">Loading...</pre>
+<svg id="board">
+    <line stroke-width="5" x1="0" x2="100" y1="0" y2="100"></line>
+</svg>
+<div id="controls">
+    <button id="Undo">Undo</button>
+    <button id="Redo">Redo</button>
+    <button id="Check">Check</button>
+</div>
 <script src="./index.js"></script>
 </body>
 </html>
