@@ -43,6 +43,7 @@ impl Rectangle {
     }
 }
 
+#[cfg(test)]
 mod test {
     use crate::model::rectangle::Rectangle;
     use proptest::prelude::*;

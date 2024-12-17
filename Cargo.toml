@@ -12,7 +12,7 @@ repository = "https://github.com/simonolander/vintergatan.git"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
-path = "wasm/lib.rs"
+path = "library/lib.rs"
 
 [profile.release]
 # This makes the compiled code faster and smaller, but it makes compiling slower,
@@ -26,10 +26,12 @@ lto = true
 [dependencies]
 # The `wasm-bindgen` crate provides the bare minimum functionality needed
 # to interact with JavaScript.
-wasm-bindgen = "0.2.92"
-petgraph = "0.6.5"
+wasm-bindgen = "0.2.99"
 js-sys = "0.3.69"
-engine = { path = "engine" }
+itertools = "0.13.0"
+petgraph = "0.6.5"
+rand = "0.8.5"
+getrandom = {version = "0.2.15", features = ["js"]}
 
 # `wee_alloc` is a tiny allocator for wasm that is only ~1K in code size
 # compared to the default allocator's ~10K. However, it is slower than the default
@@ -52,6 +54,7 @@ console_error_panic_hook = "0.1.5"
 # These crates are used for running unit tests.
 [dev-dependencies]
 wasm-bindgen-test = "0.3.42"
+proptest = "1.6.0"
 futures = "0.3.30"
 js-sys = "0.3.69"
 wasm-bindgen-futures = "0.4.42"

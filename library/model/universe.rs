@@ -7,7 +7,9 @@ use rand::rngs::StdRng;
 use rand::{random, Rng, SeedableRng};
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
+use wasm_bindgen::prelude::wasm_bindgen;
 
+#[wasm_bindgen]
 #[derive(Clone)]
 pub struct Universe {
     width: usize,
@@ -273,7 +275,7 @@ impl Universe {
 
     pub fn get_positions(&self) -> impl Iterator<Item = Position> + '_ {
         (0..self.height)
-            .flat_map(|row| (0..self.width).map(move |col| (row, col)))
+            .flat_map(move |row| (0..self.width).map(move |col| (row, col)))
             .map(|t| Position::from(t))
     }
 }
