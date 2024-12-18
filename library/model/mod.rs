@@ -1,4 +1,6 @@
 pub mod position;
 pub mod galaxy;
 pub mod universe;
-mod rectangle;
+pub mod rectangle;
+pub mod board;
+pub mod game;

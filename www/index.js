@@ -50,9 +50,14 @@ function renderBoard(universe, board) {
     board.appendChild(rect);
 }
 
+// console.log("Started", new Date())
+// import("../pkg").catch(console.error)
 import("../pkg").then(async module => {
-    let board = document.getElementById("board");
-    let universe = module.Universe.generate(10, 10);
-    board.innerText = universe.toString();
-    renderBoard(universe, board);
-})
+    // console.log("Loaded", new Date())
+    // let board = document.getElementById("board");
+    // let universe = module.Universe.generate(10, 10);
+    // console.log("Generated", new Date())
+    // board.innerText = universe.toString();
+    // renderBoard(universe, board);
+    // console.log(universe.toString());
+}).catch(console.error)

@@ -34,3 +34,18 @@ body {
     flex-direction: column;
     flex-grow: 1;
 }
+
+.wall-line {
+    stroke: #5a5a5a;
+    stroke-linecap: butt;
+}
+
+.wall-touch {
+    pointer-events: all;
+    fill: none;
+    cursor: pointer;
+}
+
+.wall-group:hover .wall-line {
+    stroke: white;
+}
