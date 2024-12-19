@@ -2,11 +2,23 @@ use yew::prelude::*;
 
 #[function_component(App)]
 pub fn app() -> Html {
+    let state = use_state(|| 0);
+
+    let incr = {
+        let state = state.clone();
+        Callback::from(move |_| state.set(*state + 1))
+    };
+
+    let decr = {
+        let state = state.clone();
+        Callback::from(move |_| state.set(*state - 1))
+    };
+
     html! {
         <main>
-            <img class="logo" src="https://yew.rs/img/logo.png" alt="Yew logo" />
-            <h1>{ "Hello World!" }</h1>
-            <span class="subtitle">{ "from Yew with " }<i class="heart" /></span>
+            <p>{"Current count:"} { *state }</p>
+            <button onclick={incr}>{"+"}</button>
+            <button onclick={decr}>{"-"}</button>
         </main>
     }
 }
