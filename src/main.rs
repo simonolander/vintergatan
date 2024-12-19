@@ -1,4 +1,6 @@
 mod app;
+mod model;
+mod state;
 
 use app::App;
 
