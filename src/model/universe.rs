@@ -7,9 +7,7 @@ use rand::rngs::StdRng;
 use rand::{random, Rng, SeedableRng};
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
-use wasm_bindgen::prelude::wasm_bindgen;
 
-#[wasm_bindgen]
 #[derive(Clone)]
 pub struct Universe {
     width: usize,
@@ -17,25 +15,19 @@ pub struct Universe {
     graph: UnGraphMap<Position, ()>,
 }
 
-#[wasm_bindgen]
 pub fn generate_universe() -> Universe {
     Universe::generate(10, 10)
 }
 
-#[wasm_bindgen]
 pub fn to_string(universe: &Universe) -> String {
     universe.to_string()
 }
 
-#[wasm_bindgen]
 impl Universe {
-
-    #[wasm_bindgen(getter)]
     pub fn width(&self) -> usize {
         self.width
     }
 
-    #[wasm_bindgen]
     pub fn generate(width: usize, height: usize) -> Universe {
         let mut universe = Universe::new(width, height);
         let iterations = width * height * 10;
@@ -65,7 +57,6 @@ impl Universe {
         universe
     }
 
-    #[wasm_bindgen(js_name = toString)]
     pub fn to_string_js(&self) -> String {
         self.to_string()
     }

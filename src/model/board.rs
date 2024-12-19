@@ -1,12 +1,5 @@
 use crate::model::position::Position;
-use js_sys::Atomics::wait_with_timeout;
 use petgraph::graphmap::UnGraphMap;
-use wasm_bindgen::prelude::Closure;
-use wasm_bindgen::{JsCast, JsValue};
-use web_sys::{
-    window, Document, Element, Event, HtmlElement, SvgElement, SvgLineElement, SvgPolygonElement,
-    SvgRectElement, SvggElement,
-};
 
 pub struct Board {
     width: usize,

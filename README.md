@@ -1,48 +1,74 @@
-## How to install
+# Yew Trunk Template
 
-```sh
-npm install
+This is a fairly minimal template for a Yew app that's built with [Trunk].
+
+## Usage
+
+For a more thorough explanation of Trunk and its features, please head over to the [repository][trunk].
+
+### Installation
+
+If you don't already have it installed, it's time to install Rust: <https://www.rust-lang.org/tools/install>.
+The rest of this guide assumes a typical Rust installation which contains both `rustup` and Cargo.
+
+To compile Rust to WASM, we need to have the `wasm32-unknown-unknown` target installed.
+If you don't already have it, install it with the following command:
+
+```bash
+rustup target add wasm32-unknown-unknown
 ```
 
-## How to run in debug mode
+Now that we have our basics covered, it's time to install the star of the show: [Trunk].
+Simply run the following command to install it:
 
-```sh
-# Builds the project and opens it in a new browser tab. Auto-reloads when the project changes.
-npm start
+```bash
+cargo install trunk wasm-bindgen-cli
 ```
 
-## How to build in release mode
+That's it, we're done!
 
-```sh
-# Builds the project and places it into the `dist` folder.
-npm run build
+### Running
+
+```bash
+trunk serve
 ```
 
-## How to run unit tests
+Rebuilds the app whenever a change is detected and runs a local server to host it.
 
-```sh
-# Runs tests in Firefox
-npm test -- --firefox
+There's also the `trunk watch` command which does the same thing but without hosting it.
 
-# Runs tests in Chrome
-npm test -- --chrome
+### Release
 
-# Runs tests in Safari
-npm test -- --safari
+```bash
+trunk build --release
 ```
 
-## What does each file do?
+This builds the app in release mode similar to `cargo build --release`.
+You can also pass the `--release` flag to `trunk serve` if you need to get every last drop of performance.
 
-* `Cargo.toml` contains the standard Rust metadata. You put your Rust dependencies in here. You must change this file with your details (name, description, version, authors, categories)
+Unless overwritten, the output will be located in the `dist` directory.
 
-* `package.json` contains the standard npm metadata. You put your JavaScript dependencies in here. You must change this file with your details (author, name, version)
+## Using this template
 
-* `webpack.config.js` contains the Webpack configuration. You shouldn't need to change this, unless you have very special needs.
+There are a few things you have to adjust when adopting this template.
 
-* The `js` folder contains your JavaScript code (`index.js` is used to hook everything into Webpack, you don't need to change it).
+### Remove example code
 
-* The `src` folder contains your Rust code.
+The code in [src/main.rs](src/main.rs) specific to the example is limited to only the `view` method.
+There is, however, a fair bit of Sass in [index.scss](index.scss) you can remove.
 
-* The `static` folder contains any files that you want copied as-is into the final build. It contains an `index.html` file which loads the `index.js` file.
+### Update metadata
 
-* The `tests` folder contains your Rust unit tests.
+Update the `name`, `version`, `description` and `repository` fields in the [Cargo.toml](Cargo.toml) file.
+The [index.html](index.html) file also contains a `<title>` tag that needs updating.
+
+Finally, you should update this very `README` file to be about your app.
+
+### License
+
+The template ships with both the Apache and MIT license.
+If you don't want to have your app dual licensed, just remove one (or both) of the files and update the `license` field in `Cargo.toml`.
+
+There are two empty spaces in the MIT license you need to fill out: `` and `Simon Olander Sahlén <simon.olander@gmail.com>`.
+
+[trunk]: https://github.com/thedodd/trunk
