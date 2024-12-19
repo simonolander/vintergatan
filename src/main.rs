@@ -1,9 +1,6 @@
-mod app;
+use leptos::prelude::*;
+
 mod model;
-mod state;
-
-use app::App;
-
 fn main() {
-    yew::Renderer::<App>::new().render();
+    mount_to_body(|| view! { <p>"Hello, world!"</p> });
 }

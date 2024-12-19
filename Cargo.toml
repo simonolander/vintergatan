@@ -11,13 +11,12 @@ license = "GPL-3"
 repository = "https://github.com/simonolander/vintergatan.git"
 
 [dependencies]
-yew = { version = "0.21.0", features = ["csr"] }
+leptos = { version = "0.7.1", features = ["csr"] }
 itertools = "0.13.0"
 petgraph = "0.6.5"
 wasm-timer = "0.2.5"
 rand = "0.8.5"
-gloo-console = "0.3.0"
-#getrandom = { version = "0.2.15", features = ["js"] }
+getrandom = { version = "0.2.15", features = ["js"] }
 
 # These crates are used for running unit tests.
 [dev-dependencies]
