@@ -95,7 +95,9 @@ impl App {
         Ok(app)
     }
 
-    fn on_click(&mut self, border: Border) {}
+    fn on_click(&mut self, border: Border) {
+        self.walls.get(&border).unwrap().remove();
+    }
 }
 
 fn create_wall_svg(
