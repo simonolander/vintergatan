@@ -1,4 +1,3 @@
-use leptos::server_fn::serde::Serialize;
 use crate::model::position::Position;
 use petgraph::graphmap::UnGraphMap;
 

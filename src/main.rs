@@ -1,11 +1,10 @@
-use leptos::prelude::*;
-use crate::app::App;
+use crate::app::app;
 
-mod model;
 mod app;
+mod model;
 mod state;
 
 fn main() {
     console_error_panic_hook::set_once();
-    mount_to_body(App);
+    app().unwrap();
 }
