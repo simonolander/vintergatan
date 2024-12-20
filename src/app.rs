@@ -1,11 +1,12 @@
 use crate::model::border::Border;
+use crate::model::position::Position;
+use itertools::Itertools;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use web_sys::wasm_bindgen::closure::Closure;
 use web_sys::wasm_bindgen::{JsCast, JsValue};
 use web_sys::{window, Document, Element, Event};
-use crate::model::position::Position;
 
 const VIEW_BOX_SIZE: f64 = 100.0;
 const WALL_CELL_RATIO: f64 = 0.1;
@@ -62,7 +63,10 @@ impl App {
                                 let mut app = app.borrow_mut();
                                 app.on_click(border);
                             });
-                            wall_svg.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
+                            wall_svg.add_event_listener_with_callback(
+                                "click",
+                                closure.as_ref().unchecked_ref(),
+                            )?;
                             closure.forget();
                         }
                         app.borrow_mut().walls.insert(border, wall_svg);
@@ -83,7 +87,10 @@ impl App {
                                 let mut app = app.borrow_mut();
                                 app.on_click(border);
                             });
-                            wall_svg.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
+                            wall_svg.add_event_listener_with_callback(
+                                "click",
+                                closure.as_ref().unchecked_ref(),
+                            )?;
                             closure.forget();
                         }
                         app.borrow_mut().walls.insert(border, wall_svg);
@@ -96,21 +103,28 @@ impl App {
     }
 
     fn on_click(&mut self, border: Border) {
-        self.walls.get(&border).unwrap().remove();
+        if let Some(element) = self.walls.get(&border) {
+            let active = element
+                .get_attribute("class")
+                .map(|class| class.split(" ").contains(&"active"))
+                .unwrap_or(false);
+
+            if active {
+                element.set_attribute("class", "wall-group").unwrap()
+            } else {
+                element.set_attribute("class", "wall-group active").unwrap()
+            }
+        }
     }
 }
 
-fn create_wall_svg(
-    document: &Document,
-    border: Border,
-) -> Result<Element, JsValue> {
+fn create_wall_svg(document: &Document, border: Border) -> Result<Element, JsValue> {
     let group = document.create_element_ns(SVG_NAMESPACE, "g")?;
     group.set_attribute("class", "wall-group")?;
 
     let p1 = border.p1();
     let p2 = border.p2();
-    let x_min =
-        WALL_SIZE / 2.0 + (WALL_SIZE + CELL_SIZE) * (p1.column + p2.column) as f64 / 2.0;
+    let x_min = WALL_SIZE / 2.0 + (WALL_SIZE + CELL_SIZE) * (p1.column + p2.column) as f64 / 2.0;
     let x_max = x_min + CELL_SIZE + WALL_SIZE;
     let x_mid = (x_min + x_max) / 2.0;
     let y_min = WALL_SIZE / 2.0 + (WALL_SIZE + CELL_SIZE) * (p1.row + p2.row) as f64 / 2.0;

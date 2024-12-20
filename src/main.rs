@@ -3,7 +3,6 @@ use crate::app::App;
 mod app;
 mod model;
 mod state;
-mod ui;
 
 fn main() {
     console_error_panic_hook::set_once();

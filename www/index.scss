@@ -36,8 +36,9 @@ body {
 }
 
 .wall-line {
-    stroke: #5a5a5a;
+    stroke: #5a5a5a10;
     stroke-linecap: butt;
+    cursor: pointer;
 }
 
 .wall-touch {
@@ -46,6 +47,14 @@ body {
     cursor: pointer;
 }
 
-.wall-group:hover .wall-line {
+.wall-group.active .wall-line {
+    stroke: #5a5a5a;
+}
+
+.wall-group:not(.active):hover .wall-line {
+    stroke: #aaa;
+}
+
+.wall-group.active:hover .wall-line {
     stroke: white;
 }
