@@ -1,5 +1,6 @@
 use crate::model::border::Border;
 use crate::model::position::Position;
+use crate::model::state::State;
 use itertools::Itertools;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -7,6 +8,7 @@ use std::rc::Rc;
 use web_sys::wasm_bindgen::closure::Closure;
 use web_sys::wasm_bindgen::{JsCast, JsValue};
 use web_sys::{window, Document, Element, Event};
+use web_sys::js_sys::unescape;
 
 const VIEW_BOX_SIZE: f64 = 100.0;
 const WALL_CELL_RATIO: f64 = 0.1;
@@ -17,7 +19,8 @@ const SVG_NAMESPACE: Option<&str> = Some("http://www.w3.org/2000/svg");
 const WALL_COLOR: &str = "#5a5a5a";
 
 pub struct App {
-    walls: HashMap<Border, Element>,
+    state: State,
+    border_elements: HashMap<Border, Element>,
 }
 
 impl App {
@@ -26,7 +29,8 @@ impl App {
         let body = document.body().unwrap();
 
         let app = Rc::new(RefCell::new(App {
-            walls: HashMap::new(),
+            state: State::generate(SIZE as usize),
+            border_elements: HashMap::new(),
         }));
 
         {
@@ -37,7 +41,7 @@ impl App {
 
             {
                 // Add border rectangle
-                let mut rect = document.create_element_ns(SVG_NAMESPACE, "rect")?;
+                let rect = document.create_element_ns(SVG_NAMESPACE, "rect")?;
                 rect.set_attribute("x", &(WALL_SIZE / 2.0).to_string())?;
                 rect.set_attribute("y", &(WALL_SIZE / 2.0).to_string())?;
                 rect.set_attribute("width", &(VIEW_BOX_SIZE - WALL_SIZE).to_string())?;
@@ -69,7 +73,7 @@ impl App {
                             )?;
                             closure.forget();
                         }
-                        app.borrow_mut().walls.insert(border, wall_svg);
+                        app.borrow_mut().border_elements.insert(border, wall_svg);
                     }
                 }
 
@@ -93,27 +97,45 @@ impl App {
                             )?;
                             closure.forget();
                         }
-                        app.borrow_mut().walls.insert(border, wall_svg);
+                        app.borrow_mut().border_elements.insert(border, wall_svg);
                     }
                 }
             }
+
+            {
+                let objective = &app.borrow().state.objective;
+                for center in &objective.centers {
+                    let cx = WALL_SIZE / 2.0 + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.column + 1) as f64;
+                    let cy = WALL_SIZE / 2.0 + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.row + 1) as f64;
+                    let r = CELL_SIZE / 3.0 - WALL_SIZE;
+                    let circle = document.create_element_ns(SVG_NAMESPACE, "circle")?;
+                    circle.set_attribute("cx", &cx.to_string())?;
+                    circle.set_attribute("cy", &cy.to_string())?;
+                    circle.set_attribute("r", &r.to_string())?;
+                    circle.set_attribute("class", "galaxy-center")?;
+                    svg.append_child(&circle)?;
+                }
+            }
+
+            let pre = document.create_element("pre")?;
+            pre.set_text_content(Some(&app.borrow().state.universe.to_string()));
+            pre.set_attribute("style", "display:none")?;
+            body.append_child(&pre)?;
         }
 
         Ok(app)
     }
 
     fn on_click(&mut self, border: Border) {
-        if let Some(element) = self.walls.get(&border) {
-            let active = element
-                .get_attribute("class")
-                .map(|class| class.split(" ").contains(&"active"))
-                .unwrap_or(false);
-
-            if active {
-                element.set_attribute("class", "wall-group").unwrap()
+        if let Some(element) = self.border_elements.get(&border) {
+            let p1 = border.p1();
+            let p2 = border.p2();
+            if self.state.board.toggle_wall(p1, p2) {
+                element.set_attribute("class", "wall-group active")
             } else {
-                element.set_attribute("class", "wall-group active").unwrap()
+                element.set_attribute("class", "wall-group")
             }
+            .unwrap();
         }
     }
 }

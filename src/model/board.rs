@@ -58,12 +58,14 @@ impl Board {
         self.graph.contains_edge(p1, p2)
     }
 
-    /// Toggles the wall between [p1] and [p2]
-    pub fn toggle_wall(&mut self, p1: Position, p2: Position) {
+    /// Toggles the wall between [p1] and [p2], returns true if there's a wall after the toggle
+    pub fn toggle_wall(&mut self, p1: Position, p2: Position) -> bool {
         if self.is_wall(p1, p2) {
             self.remove_wall(p1, p2);
+            false
         } else {
             self.add_wall(p1, p2);
+            true
         }
     }
 

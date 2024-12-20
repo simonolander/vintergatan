@@ -15,14 +15,6 @@ pub struct Universe {
     graph: UnGraphMap<Position, ()>,
 }
 
-pub fn generate_universe() -> Universe {
-    Universe::generate(10, 10)
-}
-
-pub fn to_string(universe: &Universe) -> String {
-    universe.to_string()
-}
-
 impl Universe {
     pub fn width(&self) -> usize {
         self.width
