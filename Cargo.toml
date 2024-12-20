@@ -16,7 +16,10 @@ petgraph = "0.6.5"
 rand = "0.8.5"
 getrandom = { version = "0.2.15", features = ["js"] }
 console_error_panic_hook = "0.1.7"
-web-sys = { version = "0.3.76", features = ["Window", "Document", "HtmlElement", "MouseEvent"] }
+
+[dependencies.web-sys]
+version = "0.3.76"
+features = ["Window", "Document", "HtmlElement", "MouseEvent"]
 
 
 # These crates are used for running unit tests.
