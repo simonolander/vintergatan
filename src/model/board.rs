@@ -1,6 +1,8 @@
+use leptos::server_fn::serde::Serialize;
 use crate::model::position::Position;
 use petgraph::graphmap::UnGraphMap;
 
+#[derive(Clone, Debug)]
 pub struct Board {
     width: usize,
     height: usize,

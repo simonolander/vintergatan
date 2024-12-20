@@ -8,7 +8,7 @@ use rand::{random, Rng, SeedableRng};
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Universe {
     width: usize,
     height: usize,

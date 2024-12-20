@@ -14,9 +14,11 @@ repository = "https://github.com/simonolander/vintergatan.git"
 leptos = { version = "0.7.1", features = ["csr"] }
 itertools = "0.13.0"
 petgraph = "0.6.5"
-wasm-timer = "0.2.5"
+#wasm-timer = "0.2.5"
+gloo-timers = { version = "0.3.0", features = ["futures"] }
 rand = "0.8.5"
 getrandom = { version = "0.2.15", features = ["js"] }
+console_error_panic_hook = "0.1.7"
 
 # These crates are used for running unit tests.
 [dev-dependencies]
