@@ -40,7 +40,6 @@
 //             svg_element.append_child(&rect)?;
 //         }
 //
-//         Ok(rect)
 //     }
 //
 //     fn get_cell_size(size: usize) -> f64 {
