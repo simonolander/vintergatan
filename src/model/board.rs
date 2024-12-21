@@ -108,14 +108,16 @@ impl Board {
             .centers
             .iter()
             .map(|gc| gc.position)
-            .filter(|center| galaxyByCenter.contains_key(center))
+            .filter(|center| !galaxyByCenter.contains_key(center))
             .copied()
             .collect();
 
-        let asymmetric_centers: HashSet<Position> = objective
+        let incorrect_galaxy_sizes: HashSet<Position> = objective
             .centers
             .iter()
-            .map(|gc| gc.position)
+            .filter(|gc| {
+                let
+            })
             .filter(|center| galaxyByCenter.contains_key(center))
             .copied()
             .collect();
