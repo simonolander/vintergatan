@@ -1,10 +1,14 @@
 use crate::model::board_error::BoardError;
 use crate::model::border::Border;
+use crate::model::galaxy::Galaxy;
 use crate::model::objective::Objective;
 use crate::model::position::Position;
+use crate::model::universe::Universe;
+use itertools::Itertools;
 use petgraph::graphmap::UnGraphMap;
-use petgraph::visit::FilterEdge;
-use std::collections::HashSet;
+use petgraph::visit::{FilterEdge, Visitable};
+use petgraph::Direction;
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 #[derive(Clone, Debug)]
 pub struct Board {
@@ -78,11 +82,52 @@ impl Board {
         self.graph.all_edges().map(|(p1, p2, _)| (p1, p2).into())
     }
 
-    pub fn compute_error(&self, objective: &Objective) -> BoardError {
-        let mut error = BoardError::default();
-        error.dangling_segments = self.get_dangling_borders().collect();
+    fn get_universe(&self) -> Universe {
+        let mut universe = Universe::new(self.width, self.height);
+        for p1 in self.graph.nodes() {
+            for p2 in universe.adjacent_non_neighbours(&p1) {
+                if !self.is_wall(p1, p2) {
+                    universe.make_neighbours(&p1, &p2)
+                }
+            }
+        }
+        universe
+    }
 
-        error
+    pub fn compute_error(&self, objective: &Objective) -> BoardError {
+        let dangling_segments = self.get_dangling_borders().collect();
+
+        let universe = self.get_universe();
+        let galaxies = universe.get_galaxies();
+        let galaxyByCenter: HashMap<Position, &Galaxy> = galaxies
+            .iter()
+            .map(|galaxy| (galaxy.center(), galaxy))
+            .collect();
+
+        let asymmetric_centers: HashSet<Position> = objective
+            .centers
+            .iter()
+            .map(|gc| gc.position)
+            .filter(|center| galaxyByCenter.contains_key(center))
+            .copied()
+            .collect();
+
+        let asymmetric_centers: HashSet<Position> = objective
+            .centers
+            .iter()
+            .map(|gc| gc.position)
+            .filter(|center| galaxyByCenter.contains_key(center))
+            .copied()
+            .collect();
+
+        let mut incorrect_galaxy_sizes: HashSet<Position> = HashSet::new();
+
+        BoardError {
+            dangling_segments,
+            incorrect_galaxy_sizes,
+            centerless_cells: Default::default(),
+            asymmetric_centers,
+        }
     }
 
     fn get_dangling_borders(&self) -> impl Iterator<Item = Border> + use<'_> {

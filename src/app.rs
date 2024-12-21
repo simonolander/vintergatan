@@ -1,15 +1,14 @@
 use crate::model::border::Border;
-use crate::model::galaxy::Galaxy;
 use crate::model::position::Position;
 use crate::model::state::State;
 use itertools::Itertools;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use web_sys::js_sys::unescape;
 use web_sys::wasm_bindgen::closure::Closure;
 use web_sys::wasm_bindgen::{JsCast, JsValue};
 use web_sys::{window, Document, Element, Event};
+use crate::model::board_error::BoardError;
 
 const VIEW_BOX_SIZE: f64 = 100.0;
 const WALL_CELL_RATIO: f64 = 0.1;
@@ -68,7 +67,7 @@ impl App {
                             let app = Rc::clone(&app);
                             let closure = Closure::<dyn FnMut(_)>::new(move |event: Event| {
                                 let mut app = app.borrow_mut();
-                                app.on_border_click(border);
+                                app.on_border_click(border).unwrap();
                             });
                             wall_svg.add_event_listener_with_callback(
                                 "click",
@@ -92,7 +91,7 @@ impl App {
                             let app = Rc::clone(&app);
                             let closure = Closure::<dyn FnMut(_)>::new(move |event: Event| {
                                 let mut app = app.borrow_mut();
-                                app.on_border_click(border);
+                                app.on_border_click(border).unwrap();
                             });
                             wall_svg.add_event_listener_with_callback(
                                 "click",
@@ -138,6 +137,7 @@ impl App {
 
         {
             let div = document.create_element("div")?;
+            div.set_attribute("class", "controls")?;
             body.append_child(&div)?;
 
             {
@@ -146,7 +146,7 @@ impl App {
                 check_button.set_text_content(Some("Check"));
                 let app = Rc::clone(&app);
                 let closure = Closure::<dyn FnMut(_)>::new(move |event: Event| {
-                    app.borrow_mut().on_check_click();
+                    app.borrow_mut().on_check_click().unwrap();
                 });
                 check_button
                     .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
@@ -157,24 +157,17 @@ impl App {
         Ok(app)
     }
 
-    fn on_border_click(&mut self, border: Border) {
-        if let Some(element) = self.border_elements.get(&border) {
-            let p1 = border.p1();
-            let p2 = border.p2();
-            self.state.board.toggle_wall(p1, p2);
-            self.render().unwrap();
-            // if self.state.board.toggle_wall(p1, p2) {
-            //     element.set_attribute("class", "wall-group active")
-            // } else {
-            //     element.set_attribute("class", "wall-group")
-            // }
-            // .unwrap();
-        }
+    fn on_border_click(&mut self, border: Border) -> Result<(), JsValue>{
+        let p1 = border.p1();
+        let p2 = border.p2();
+        self.state.board.toggle_wall(p1, p2);
+        self.state.error = BoardError::none();
+        self.render()
     }
 
-    fn on_check_click(&mut self) {
+    fn on_check_click(&mut self) -> Result<(), JsValue> {
         self.state.error = self.state.board.compute_error(&self.state.objective);
-        self.render().unwrap();
+        self.render()
     }
 
     fn render(&self) -> Result<(), JsValue> {

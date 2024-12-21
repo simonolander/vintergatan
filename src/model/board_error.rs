@@ -9,3 +9,9 @@ pub struct BoardError {
     pub centerless_cells: HashSet<Position>,
     pub asymmetric_centers: HashSet<Position>,
 }
+
+impl BoardError {
+    pub(crate) fn none() -> BoardError {
+        BoardError::default()
+    }
+}
