@@ -78,8 +78,11 @@ impl Board {
         self.graph.all_edges().map(|(p1, p2, _)| (p1, p2).into())
     }
 
-    pub fn compute_error(&self, objective: Objective) -> BoardError {
-        panic!()
+    pub fn compute_error(&self, objective: &Objective) -> BoardError {
+        let mut error = BoardError::default();
+        error.dangling_segments = self.get_dangling_borders().collect();
+
+        error
     }
 
     fn get_dangling_borders(&self) -> impl Iterator<Item = Border> + use<'_> {

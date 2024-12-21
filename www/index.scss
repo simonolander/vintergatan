@@ -51,6 +51,10 @@ body {
     stroke: #5a5a5a;
 }
 
+.wall-group.dangling .wall-line {
+    stroke: #5b2828;
+}
+
 .wall-group:not(.active):hover .wall-line {
     stroke: #aaa;
 }

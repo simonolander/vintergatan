@@ -172,7 +172,10 @@ impl App {
         }
     }
 
-    fn on_check_click(&mut self) {}
+    fn on_check_click(&mut self) {
+        self.state.error = self.state.board.compute_error(&self.state.objective);
+        self.render().unwrap();
+    }
 
     fn render(&self) -> Result<(), JsValue> {
         // render_cells();
