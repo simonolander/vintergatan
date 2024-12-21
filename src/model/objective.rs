@@ -2,6 +2,7 @@ use crate::model::border::Border;
 use crate::model::position::Position;
 use crate::model::universe::Universe;
 
+#[derive(Debug, Copy, Clone)]
 pub struct GalaxyCenter {
     pub position: Position,
     pub size: Option<usize>,

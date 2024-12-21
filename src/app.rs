@@ -1,14 +1,15 @@
 use crate::model::border::Border;
+use crate::model::galaxy::Galaxy;
 use crate::model::position::Position;
 use crate::model::state::State;
 use itertools::Itertools;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use web_sys::js_sys::unescape;
 use web_sys::wasm_bindgen::closure::Closure;
 use web_sys::wasm_bindgen::{JsCast, JsValue};
 use web_sys::{window, Document, Element, Event};
-use web_sys::js_sys::unescape;
 
 const VIEW_BOX_SIZE: f64 = 100.0;
 const WALL_CELL_RATIO: f64 = 0.1;
@@ -21,6 +22,7 @@ const WALL_COLOR: &str = "#5a5a5a";
 pub struct App {
     state: State,
     border_elements: HashMap<Border, Element>,
+    galaxy_center_elements: HashMap<Position, Element>,
 }
 
 impl App {
@@ -31,6 +33,7 @@ impl App {
         let app = Rc::new(RefCell::new(App {
             state: State::generate(SIZE as usize),
             border_elements: HashMap::new(),
+            galaxy_center_elements: HashMap::new(),
         }));
 
         {
@@ -65,7 +68,7 @@ impl App {
                             let app = Rc::clone(&app);
                             let closure = Closure::<dyn FnMut(_)>::new(move |event: Event| {
                                 let mut app = app.borrow_mut();
-                                app.on_click(border);
+                                app.on_border_click(border);
                             });
                             wall_svg.add_event_listener_with_callback(
                                 "click",
@@ -89,7 +92,7 @@ impl App {
                             let app = Rc::clone(&app);
                             let closure = Closure::<dyn FnMut(_)>::new(move |event: Event| {
                                 let mut app = app.borrow_mut();
-                                app.on_click(border);
+                                app.on_border_click(border);
                             });
                             wall_svg.add_event_listener_with_callback(
                                 "click",
@@ -103,10 +106,12 @@ impl App {
             }
 
             {
-                let objective = &app.borrow().state.objective;
-                for center in &objective.centers {
-                    let cx = WALL_SIZE / 2.0 + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.column + 1) as f64;
-                    let cy = WALL_SIZE / 2.0 + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.row + 1) as f64;
+                let mut app = app.borrow_mut();
+                for center in app.state.objective.centers.iter().cloned().collect::<Vec<_>>() {
+                    let cx = WALL_SIZE / 2.0
+                        + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.column + 1) as f64;
+                    let cy = WALL_SIZE / 2.0
+                        + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.row + 1) as f64;
                     let r = CELL_SIZE / 3.0 - WALL_SIZE;
                     let circle = document.create_element_ns(SVG_NAMESPACE, "circle")?;
                     circle.set_attribute("cx", &cx.to_string())?;
@@ -114,6 +119,7 @@ impl App {
                     circle.set_attribute("r", &r.to_string())?;
                     circle.set_attribute("class", "galaxy-center")?;
                     svg.append_child(&circle)?;
+                    app.galaxy_center_elements.insert(center.position, circle);
                 }
             }
 
@@ -123,10 +129,28 @@ impl App {
             body.append_child(&pre)?;
         }
 
+        {
+            let div = document.create_element("div")?;
+            body.append_child(&div)?;
+
+            {
+                let check_button = &document.create_element("button")?;
+                div.append_child(&check_button)?;
+                check_button.set_text_content(Some("Check"));
+                let app = Rc::clone(&app);
+                let closure = Closure::<dyn FnMut(_)>::new(move |event: Event| {
+                    app.borrow_mut().on_check_click();
+                });
+                check_button
+                    .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
+                closure.forget();
+            }
+        }
+
         Ok(app)
     }
 
-    fn on_click(&mut self, border: Border) {
+    fn on_border_click(&mut self, border: Border) {
         if let Some(element) = self.border_elements.get(&border) {
             let p1 = border.p1();
             let p2 = border.p2();
@@ -138,6 +162,8 @@ impl App {
             .unwrap();
         }
     }
+
+    fn on_check_click(&mut self) {}
 }
 
 fn create_wall_svg(document: &Document, border: Border) -> Result<Element, JsValue> {
