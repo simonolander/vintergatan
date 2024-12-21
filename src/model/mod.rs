@@ -6,3 +6,4 @@ pub mod board;
 pub mod border;
 pub mod state;
 pub mod objective;
+pub mod board_error;

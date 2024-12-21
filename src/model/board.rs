@@ -1,5 +1,10 @@
+use crate::model::board_error::BoardError;
+use crate::model::border::Border;
+use crate::model::objective::Objective;
 use crate::model::position::Position;
 use petgraph::graphmap::UnGraphMap;
+use petgraph::visit::FilterEdge;
+use std::collections::HashSet;
 
 #[derive(Clone, Debug)]
 pub struct Board {
@@ -69,10 +74,73 @@ impl Board {
         }
     }
 
-    pub fn get_walls(&self) -> Vec<(Position, Position)> {
-        self.graph
-            .all_edges()
-            .map(|edge| (edge.0, edge.1))
-            .collect()
+    pub fn get_borders(&self) -> impl Iterator<Item = Border> + use<'_> {
+        self.graph.all_edges().map(|(p1, p2, _)| (p1, p2).into())
+    }
+
+    pub fn compute_error(&self, objective: Objective) -> BoardError {
+        panic!()
+    }
+
+    fn get_dangling_borders(&self) -> impl Iterator<Item = Border> + use<'_> {
+        self.get_borders().filter(|border| self.is_dangling(border))
+    }
+
+    fn is_dangling(&self, border: &Border) -> bool {
+        let p1 = border.p1();
+        let p2 = border.p2();
+        if border.is_vertical() {
+            // Check that the border connects to something above
+            if p1.row != 0 {
+                let p1_up = p1.up();
+                let p2_up = p2.up();
+                if !self.is_wall(p1, p1_up)
+                    && !self.is_wall(p1_up, p2_up)
+                    && !self.is_wall(p2_up, p2)
+                {
+                    return true;
+                }
+            }
+
+            // Check that the border connects to something below
+            if p1.row != (self.height - 1) as i32 {
+                let p1_down = p1.down();
+                let p2_down = p2.down();
+                if !self.is_wall(p1, p1_down)
+                    && !self.is_wall(p1_down, p2_down)
+                    && !self.is_wall(p2_down, p2)
+                {
+                    return true;
+                }
+            }
+        } else {
+            // The border is horizontal
+
+            // Check that the border connects to something to the left
+            if p1.column != 0 {
+                let p1_left = p1.left();
+                let p2_left = p2.left();
+                if !self.is_wall(p1, p1_left)
+                    && !self.is_wall(p1_left, p2_left)
+                    && !self.is_wall(p2_left, p2)
+                {
+                    return true;
+                }
+            }
+
+            // Check that the border connects to something below
+            if p1.column != (self.width - 1) as i32 {
+                let p1_right = p1.right();
+                let p2_right = p2.right();
+                if !self.is_wall(p1, p1_right)
+                    && !self.is_wall(p1_right, p2_right)
+                    && !self.is_wall(p2_right, p2)
+                {
+                    return true;
+                }
+            }
+        }
+
+        false
     }
 }

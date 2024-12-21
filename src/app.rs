@@ -107,7 +107,14 @@ impl App {
 
             {
                 let mut app = app.borrow_mut();
-                for center in app.state.objective.centers.iter().cloned().collect::<Vec<_>>() {
+                for center in app
+                    .state
+                    .objective
+                    .centers
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                {
                     let cx = WALL_SIZE / 2.0
                         + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.column + 1) as f64;
                     let cy = WALL_SIZE / 2.0
@@ -154,16 +161,41 @@ impl App {
         if let Some(element) = self.border_elements.get(&border) {
             let p1 = border.p1();
             let p2 = border.p2();
-            if self.state.board.toggle_wall(p1, p2) {
-                element.set_attribute("class", "wall-group active")
-            } else {
-                element.set_attribute("class", "wall-group")
-            }
-            .unwrap();
+            self.state.board.toggle_wall(p1, p2);
+            self.render().unwrap();
+            // if self.state.board.toggle_wall(p1, p2) {
+            //     element.set_attribute("class", "wall-group active")
+            // } else {
+            //     element.set_attribute("class", "wall-group")
+            // }
+            // .unwrap();
         }
     }
 
     fn on_check_click(&mut self) {}
+
+    fn render(&self) -> Result<(), JsValue> {
+        // render_cells();
+        self.render_borders()?;
+        // render_centers();
+
+        Ok(())
+    }
+
+    fn render_borders(&self) -> Result<(), JsValue> {
+        for (border, element) in &self.border_elements {
+            let mut classes = vec!["wall-group"];
+            if self.state.error.dangling_segments.contains(&border) {
+                classes.push("dangling");
+            }
+            if self.state.board.is_wall(border.p1(), border.p2()) {
+                classes.push("active");
+            }
+            element.set_attribute("class", &classes.join(" "))?;
+        }
+
+        Ok(())
+    }
 }
 
 fn create_wall_svg(document: &Document, border: Border) -> Result<Element, JsValue> {
