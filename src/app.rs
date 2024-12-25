@@ -1,3 +1,4 @@
+use crate::model::board_error::BoardError;
 use crate::model::border::Border;
 use crate::model::position::Position;
 use crate::model::state::State;
@@ -8,7 +9,6 @@ use std::rc::Rc;
 use web_sys::wasm_bindgen::closure::Closure;
 use web_sys::wasm_bindgen::{JsCast, JsValue};
 use web_sys::{window, Document, Element, Event};
-use crate::model::board_error::BoardError;
 
 const VIEW_BOX_SIZE: f64 = 100.0;
 const WALL_CELL_RATIO: f64 = 0.1;
@@ -157,7 +157,7 @@ impl App {
         Ok(app)
     }
 
-    fn on_border_click(&mut self, border: Border) -> Result<(), JsValue>{
+    fn on_border_click(&mut self, border: Border) -> Result<(), JsValue> {
         let p1 = border.p1();
         let p2 = border.p2();
         self.state.board.toggle_wall(p1, p2);
@@ -173,7 +173,7 @@ impl App {
     fn render(&self) -> Result<(), JsValue> {
         // render_cells();
         self.render_borders()?;
-        // render_centers();
+        self.render_centers()?;
 
         Ok(())
     }
@@ -188,6 +188,20 @@ impl App {
                 classes.push("active");
             }
             element.set_attribute("class", &classes.join(" "))?;
+        }
+
+        Ok(())
+    }
+
+    fn render_centers(&self) -> Result<(), JsValue> {
+        for gc in &self.state.objective.centers {
+            if let Some(element) = self.galaxy_center_elements.get(&gc.position) {
+                let mut classes = vec!["galaxy-center"];
+                if self.state.error.cut_centers.contains(&gc.position) {
+                    classes.push("cut");
+                }
+                element.set_attribute("class", &classes.join(" "))?;
+            }
         }
 
         Ok(())
