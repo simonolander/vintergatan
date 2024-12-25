@@ -116,7 +116,7 @@ impl Board {
             .centers
             .iter()
             .filter(|gc| {
-                let
+                true
             })
             .filter(|center| galaxyByCenter.contains_key(center))
             .copied()
