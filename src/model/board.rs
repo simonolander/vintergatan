@@ -2,7 +2,7 @@ use crate::model::board_error::BoardError;
 use crate::model::border::Border;
 use crate::model::galaxy::Galaxy;
 use crate::model::objective::Objective;
-use crate::model::position::Position;
+use crate::model::position::{CenterPlacement, Position};
 use crate::model::universe::Universe;
 use itertools::Itertools;
 use petgraph::graphmap::UnGraphMap;
@@ -39,6 +39,10 @@ impl Board {
             && position.row < self.height as i32
             && position.column >= 0
             && position.column < self.width as i32
+    }
+
+    pub fn is_active(&self, border: &Border) -> bool {
+        self.is_wall(border.p1(), border.p2())
     }
 
     /// Adds a wall between [p1] and [p2], returns true if the wall did not previously exist
@@ -99,36 +103,50 @@ impl Board {
 
         let universe = self.get_universe();
         let galaxies = universe.get_galaxies();
-        let galaxyByCenter: HashMap<Position, &Galaxy> = galaxies
+        let galaxy_by_center: HashMap<Position, &Galaxy> = galaxies
             .iter()
             .map(|galaxy| (galaxy.center(), galaxy))
             .collect();
+        let galaxy_by_position: HashMap<Position, &Galaxy> = galaxies
+            .iter()
+            .flat_map(|galaxy| galaxy.get_positions().copied().map(move |p| (p, galaxy)))
+            .collect();
 
-        let asymmetric_centers: HashSet<Position> = objective
+        let cut_centers: HashSet<Position> = objective
             .centers
             .iter()
             .map(|gc| gc.position)
-            .filter(|center| !galaxyByCenter.contains_key(center))
-            .copied()
+            .filter(|center| self.is_center_cut(center))
             .collect();
 
-        let incorrect_galaxy_sizes: HashSet<Position> = objective
-            .centers
-            .iter()
-            .filter(|gc| {
-                true
-            })
-            .filter(|center| galaxyByCenter.contains_key(center))
-            .copied()
-            .collect();
-
-        let mut incorrect_galaxy_sizes: HashSet<Position> = HashSet::new();
+        let asymmetric_centers = Default::default();
+        let incorrect_galaxy_sizes = Default::default();
+        let centerless_cells = Default::default();
 
         BoardError {
             dangling_segments,
             incorrect_galaxy_sizes,
-            centerless_cells: Default::default(),
+            centerless_cells,
+            cut_centers,
             asymmetric_centers,
+        }
+    }
+
+    fn is_center_cut(&self, center: &Position) -> bool {
+        match center.get_center_placement() {
+            CenterPlacement::Center(_) => false,
+            CenterPlacement::VerticalBorder(border) => self.is_active(&border),
+            CenterPlacement::HorizontalBorder(border) => self.is_active(&border),
+            CenterPlacement::Intersection(rect) => {
+                let top_left = Position::new(rect.min_row, rect.min_column);
+                let top_right = Position::new(rect.min_row, rect.max_column);
+                let bottom_left = Position::new(rect.max_row, rect.min_column);
+                let bottom_right = Position::new(rect.max_row, rect.max_column);
+                self.is_wall(top_left, top_right)
+                    || self.is_wall(top_right, bottom_right)
+                    || self.is_wall(bottom_right, bottom_left)
+                    || self.is_wall(top_left, bottom_left)
+            }
         }
     }
 

@@ -7,6 +7,7 @@ pub struct BoardError {
     pub dangling_segments: HashSet<Border>,
     pub incorrect_galaxy_sizes: HashSet<Position>,
     pub centerless_cells: HashSet<Position>,
+    pub cut_centers: HashSet<Position>,
     pub asymmetric_centers: HashSet<Position>,
 }
 
