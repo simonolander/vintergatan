@@ -6,7 +6,6 @@ use itertools::Itertools;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use web_sys::js_sys::Atomics::or_bigint;
 use web_sys::wasm_bindgen::closure::Closure;
 use web_sys::wasm_bindgen::{JsCast, JsValue};
 use web_sys::{window, Document, Element, Event};
@@ -24,6 +23,7 @@ pub struct App {
     border_elements: HashMap<Border, Element>,
     galaxy_center_elements: HashMap<Position, Element>,
     cell_elements: HashMap<Position, Element>,
+    new_game_button: Element,
 }
 
 impl App {
@@ -36,6 +36,7 @@ impl App {
             border_elements: HashMap::new(),
             galaxy_center_elements: HashMap::new(),
             cell_elements: HashMap::new(),
+            new_game_button: document.create_element_ns(SVG_NAMESPACE, "svg")?,
         }));
 
         {
@@ -180,7 +181,26 @@ impl App {
             body.append_child(&div)?;
 
             {
-                let check_button = &document.create_element("button")?;
+                let new_game_button = document.create_element("button")?;
+                div.append_child(&new_game_button)?;
+                new_game_button.set_text_content(Some("New game"));
+                new_game_button.set_attribute("class", "hidden")?;
+                {
+                    let app = Rc::clone(&app);
+                    let closure = Closure::<dyn FnMut(_)>::new(move |event: Event| {
+                        app.borrow_mut().on_new_game_click().unwrap();
+                    });
+                    new_game_button.add_event_listener_with_callback(
+                        "click",
+                        closure.as_ref().unchecked_ref(),
+                    )?;
+                    closure.forget();
+                }
+                app.borrow_mut().new_game_button = new_game_button;
+            }
+
+            {
+                let check_button = document.create_element("button")?;
                 div.append_child(&check_button)?;
                 check_button.set_text_content(Some("Check"));
                 let app = Rc::clone(&app);
@@ -189,6 +209,31 @@ impl App {
                 });
                 check_button
                     .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
+                closure.forget();
+            }
+
+            {
+                let undo_button = &document.create_element("button")?;
+                div.append_child(&undo_button)?;
+                undo_button.set_text_content(Some("Undo"));
+                let app = Rc::clone(&app);
+                let closure = Closure::<dyn FnMut(_)>::new(move |event: Event| {
+                    app.borrow_mut().on_undo_click().unwrap();
+                });
+                undo_button
+                    .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
+                closure.forget();
+            }
+
+            {
+                let redo = &document.create_element("button")?;
+                div.append_child(&redo)?;
+                redo.set_text_content(Some("Redo"));
+                let app = Rc::clone(&app);
+                let closure = Closure::<dyn FnMut(_)>::new(move |event: Event| {
+                    app.borrow_mut().on_undo_click().unwrap();
+                });
+                redo.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
                 closure.forget();
             }
         }
@@ -200,19 +245,32 @@ impl App {
         let p1 = border.p1();
         let p2 = border.p2();
         self.state.board.toggle_wall(p1, p2);
-        self.state.error = BoardError::none();
+        self.state.error = None;
         self.render()
     }
 
     fn on_check_click(&mut self) -> Result<(), JsValue> {
-        self.state.error = self.state.board.compute_error(&self.state.objective);
+        self.state.error = Some(self.state.board.compute_error(&self.state.objective));
         self.render()
+    }
+
+    fn on_undo_click(&mut self) -> Result<(), JsValue> {
+        Ok(())
+    }
+
+    fn on_new_game_click(&mut self) -> Result<(), JsValue> {
+        Ok(())
+    }
+
+    fn on_redo_click(&mut self) -> Result<(), JsValue> {
+        Ok(())
     }
 
     fn render(&self) -> Result<(), JsValue> {
         self.render_cells()?;
         self.render_borders()?;
         self.render_centers()?;
+        self.render_controls()?;
 
         Ok(())
     }
@@ -220,8 +278,10 @@ impl App {
     fn render_cells(&self) -> Result<(), JsValue> {
         for (p, element) in &self.cell_elements {
             let mut classes = vec!["cell"];
-            if self.state.error.centerless_cells.contains(&p) {
-                classes.push("centerless");
+            if let Some(error) = &self.state.error {
+                if error.centerless_cells.contains(&p) {
+                    classes.push("centerless");
+                }
             }
             element.set_attribute("class", &classes.join(" "))?;
         }
@@ -232,8 +292,10 @@ impl App {
     fn render_borders(&self) -> Result<(), JsValue> {
         for (border, element) in &self.border_elements {
             let mut classes = vec!["wall-group"];
-            if self.state.error.dangling_borders.contains(&border) {
-                classes.push("dangling");
+            if let Some(error) = &self.state.error {
+                if error.dangling_borders.contains(&border) {
+                    classes.push("dangling");
+                }
             }
             if self.state.board.is_wall(border.p1(), border.p2()) {
                 classes.push("active");
@@ -248,24 +310,36 @@ impl App {
         for gc in &self.state.objective.centers {
             if let Some(element) = self.galaxy_center_elements.get(&gc.position) {
                 let mut classes = vec!["galaxy-center"];
-                if self.state.error.cut_centers.contains(&gc.position) {
-                    classes.push("cut");
-                }
-                if self.state.error.asymmetric_centers.contains(&gc.position) {
-                    classes.push("asymmetric");
-                }
-                if self
-                    .state
-                    .error
-                    .incorrect_galaxy_sizes
-                    .contains(&gc.position)
-                {
-                    classes.push("incorrect-size");
+                if let Some(error) = &self.state.error {
+                    if error.cut_centers.contains(&gc.position) {
+                        classes.push("cut");
+                    }
+                    if error.asymmetric_centers.contains(&gc.position) {
+                        classes.push("asymmetric");
+                    }
+                    if error.incorrect_galaxy_sizes.contains(&gc.position) {
+                        classes.push("incorrect-size");
+                    }
                 }
                 element.set_attribute("class", &classes.join(" "))?;
             }
         }
 
+        Ok(())
+    }
+
+    fn render_controls(&self) -> Result<(), JsValue> {
+        let error_free = self
+            .state
+            .error
+            .as_ref()
+            .map(|error| error.is_error_free())
+            .unwrap_or(false);
+        if error_free {
+            self.new_game_button.set_attribute("class", "")?;
+        } else {
+            self.new_game_button.set_attribute("class", "hidden")?;
+        }
         Ok(())
     }
 }

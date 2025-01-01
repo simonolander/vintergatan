@@ -29,10 +29,14 @@ body {
   }
 }
 
-#controls {
+.controls {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+}
+
+.controls .hidden {
+  display: none;
 }
 
 .wall-line {
