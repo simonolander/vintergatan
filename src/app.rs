@@ -218,6 +218,12 @@ impl App {
                 if self.state.error.cut_centers.contains(&gc.position) {
                     classes.push("cut");
                 }
+                if self.state.error.asymmetric_centers.contains(&gc.position) {
+                    classes.push("asymmetric");
+                }
+                if self.state.error.incorrect_galaxy_sizes.contains(&gc.position) {
+                    classes.push("incorrect-size");
+                }
                 element.set_attribute("class", &classes.join(" "))?;
             }
         }
