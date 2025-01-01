@@ -11,6 +11,7 @@ pub struct Position {
     pub column: i32,
 }
 
+#[derive(Eq, PartialEq, Debug)]
 pub enum CenterPlacement {
     Center(Position),
     VerticalBorder(Border),
@@ -138,6 +139,22 @@ mod tests {
             prop_assert_eq!(left_count, right_count, "assertion failed: `(left.count({:?}) == right.count({:?}))`\n  left: `{:?}`,\n right: `{:?}`", item, item, left, right);
         }
         Ok(())
+    }
+
+    mod get_center_placement {
+        use crate::model::position::{CenterPlacement, Position};
+
+        #[test]
+        fn center_within_cell_should_return_that_cell() {
+            assert_eq!(Position::new(0, 0).get_center_placement(), CenterPlacement::Center(Position::new(0, 0)));
+            assert_eq!(Position::new(0, 2).get_center_placement(), CenterPlacement::Center(Position::new(0, 1)));
+            assert_eq!(Position::new(2, 0).get_center_placement(), CenterPlacement::Center(Position::new(1, 0)));
+            assert_eq!(Position::new(2, 2).get_center_placement(), CenterPlacement::Center(Position::new(1, 1)));
+            assert_eq!(Position::new(10, 10).get_center_placement(), CenterPlacement::Center(Position::new(5, 5)));
+            assert_eq!(Position::new(10, 20).get_center_placement(), CenterPlacement::Center(Position::new(5, 10)));
+            assert_eq!(Position::new(20, 10).get_center_placement(), CenterPlacement::Center(Position::new(10, 5)));
+            assert_eq!(Position::new(20, 20).get_center_placement(), CenterPlacement::Center(Position::new(10, 10)));
+        }
     }
 
     proptest! {

@@ -73,9 +73,6 @@ impl Board {
 
     /// Returns whether there is a wall between p1 and p2
     pub fn is_wall(&self, p1: Position, p2: Position) -> bool {
-        debug_assert!(p1.is_adjacent_to(&p2));
-        debug_assert!(self.contains(&p1));
-        debug_assert!(self.contains(&p2));
         self.graph.contains_edge(p1, p2)
     }
 
@@ -94,22 +91,42 @@ impl Board {
         self.graph.all_edges().map(|(p1, p2, _)| (p1, p2).into())
     }
 
-    fn get_universe(&self) -> Universe {
-        let mut universe = Universe::new(self.width, self.height);
-        for p1 in self.graph.nodes() {
-            for p2 in universe.adjacent_non_neighbours(&p1) {
-                if !self.is_wall(p1, p2) {
-                    universe.make_neighbours(&p1, &p2)
+    fn get_galaxies(&self) -> Vec<Galaxy> {
+        let mut galaxies = Vec::new();
+        let mut remaining_positions: BTreeSet<Position> = self.get_positions().collect();
+        while let Some(p) = remaining_positions.pop_first() {
+            let mut component = HashSet::new();
+            let mut queue = BTreeSet::new();
+            queue.insert(p);
+            while let Some(p) = queue.pop_first() {
+                component.insert(p);
+                remaining_positions.remove(&p);
+                for neighbour in p.adjacent() {
+                    if component.contains(&neighbour) {
+                        continue;
+                    }
+                    if queue.contains(&neighbour) {
+                        continue;
+                    }
+                    if !self.contains(&neighbour) {
+                        continue;
+                    }
+                    if self.is_wall(p, neighbour) {
+                        continue;
+                    }
+                    queue.insert(neighbour);
                 }
             }
+            galaxies.push(Galaxy::from_positions(component));
         }
-        universe
+
+        galaxies
     }
 
     pub fn compute_error(&self, objective: &Objective) -> BoardError {
         let dangling_segments = self.get_dangling_borders().collect();
 
-        let galaxies = self.get_universe().get_galaxies();
+        let galaxies = self.get_galaxies();
         let galaxy_by_position: HashMap<Position, &Galaxy> = galaxies
             .iter()
             .flat_map(|galaxy| galaxy.get_positions().copied().map(move |p| (p, galaxy)))
@@ -266,4 +283,22 @@ impl Board {
 
         false
     }
+}
+
+
+#[cfg(test)]
+mod tests {
+
+    mod get_galaxies {
+        use crate::model::board::Board;
+
+        #[test]
+        fn empty_board_should_return_one_galaxy() {
+            let board = Board::new(1, 1);
+            let galaxies = board.get_galaxies();
+            assert_eq!(galaxies.len(), 1);
+            assert_eq!(galaxies[0].size(), 1);
+        }
+    }
+
 }

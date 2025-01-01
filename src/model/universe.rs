@@ -1,5 +1,6 @@
 use crate::model::galaxy::Galaxy;
 use crate::model::position::Position;
+use petgraph::data::Build;
 use petgraph::graphmap::UnGraphMap;
 use petgraph::visit::{Dfs, Walker};
 use rand::prelude::SliceRandom;
@@ -47,10 +48,6 @@ impl Universe {
         }
         assert!(universe.is_valid());
         universe
-    }
-
-    pub fn to_string_js(&self) -> String {
-        self.to_string()
     }
 }
 
@@ -327,5 +324,34 @@ impl Display for Universe {
             }
         }
         Ok(())
+    }
+}
+
+impl From<&[Galaxy]> for Universe {
+    fn from(galaxies: &[Galaxy]) -> Self {
+        let width = galaxies
+            .iter()
+            .flat_map(|g| g.get_positions())
+            .map(|p| p.column + 1)
+            .max()
+            .unwrap_or(0) as usize;
+        let height = galaxies
+            .iter()
+            .flat_map(|g| g.get_positions())
+            .map(|p| p.row + 1)
+            .max()
+            .unwrap_or(0) as usize;
+        let mut universe = Universe::new(width, height);
+        for g in galaxies {
+            for p1 in g.get_positions() {
+                for p2 in &p1.adjacent() {
+                    if g.contains_position(p2) {
+                        universe.graph.add_edge(*p1, *p2, ());
+                    }
+                }
+            }
+        }
+
+        universe
     }
 }
