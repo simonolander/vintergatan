@@ -74,6 +74,14 @@ body {
   font-weight: 700;
 }
 
+.galaxy-center.incorrect-size text {
+  fill: red;
+}
+
+.galaxy-center.asymmetric {
+  fill: #5b2828;
+}
+
 .galaxy-center.cut {
   fill: #5b2828;
 }
