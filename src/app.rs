@@ -6,10 +6,10 @@ use itertools::Itertools;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use web_sys::js_sys::Atomics::or_bigint;
 use web_sys::wasm_bindgen::closure::Closure;
 use web_sys::wasm_bindgen::{JsCast, JsValue};
 use web_sys::{window, Document, Element, Event};
-use web_sys::js_sys::Atomics::or_bigint;
 
 const VIEW_BOX_SIZE: f64 = 100.0;
 const WALL_CELL_RATIO: f64 = 0.1;
@@ -23,6 +23,7 @@ pub struct App {
     state: State,
     border_elements: HashMap<Border, Element>,
     galaxy_center_elements: HashMap<Position, Element>,
+    cell_elements: HashMap<Position, Element>,
 }
 
 impl App {
@@ -34,6 +35,7 @@ impl App {
             state: State::generate(SIZE as usize),
             border_elements: HashMap::new(),
             galaxy_center_elements: HashMap::new(),
+            cell_elements: HashMap::new(),
         }));
 
         {
@@ -41,6 +43,25 @@ impl App {
             svg.set_attribute("viewBox", &format!("0 0 {VIEW_BOX_SIZE} {VIEW_BOX_SIZE}"))?;
             svg.set_id("board");
             body.append_child(&svg)?;
+
+            {
+                // Add cells
+                for row in 0..SIZE {
+                    for col in 0..SIZE {
+                        let p = Position::new(row, col);
+                        let rect = document.create_element_ns(SVG_NAMESPACE, "rect")?;
+                        svg.append_child(&rect)?;
+                        let x = (WALL_SIZE + CELL_SIZE) * col as f64;
+                        let y = (WALL_SIZE + CELL_SIZE) * row as f64;
+                        rect.set_attribute("x", &x.to_string())?;
+                        rect.set_attribute("y", &y.to_string())?;
+                        rect.set_attribute("width", &(CELL_SIZE + 2.0 * WALL_SIZE).to_string())?;
+                        rect.set_attribute("height", &(CELL_SIZE + 2.0 * WALL_SIZE).to_string())?;
+                        rect.set_attribute("class", "cell")?;
+                        app.borrow_mut().cell_elements.insert(p, rect);
+                    }
+                }
+            }
 
             {
                 // Add border rectangle
@@ -133,7 +154,7 @@ impl App {
                         g.append_child(&circle)?;
                     }
                     {
-                        let text =document.create_element_ns(SVG_NAMESPACE, "text")?;
+                        let text = document.create_element_ns(SVG_NAMESPACE, "text")?;
                         text.set_attribute("x", &cx.to_string())?;
                         text.set_attribute("y", &cy.to_string())?;
                         text.set_attribute("text-anchor", "middle")?;
@@ -189,9 +210,21 @@ impl App {
     }
 
     fn render(&self) -> Result<(), JsValue> {
-        // render_cells();
+        self.render_cells()?;
         self.render_borders()?;
         self.render_centers()?;
+
+        Ok(())
+    }
+
+    fn render_cells(&self) -> Result<(), JsValue> {
+        for (p, element) in &self.cell_elements {
+            let mut classes = vec!["cell"];
+            if self.state.error.centerless_cells.contains(&p) {
+                classes.push("centerless");
+            }
+            element.set_attribute("class", &classes.join(" "))?;
+        }
 
         Ok(())
     }
@@ -221,7 +254,12 @@ impl App {
                 if self.state.error.asymmetric_centers.contains(&gc.position) {
                     classes.push("asymmetric");
                 }
-                if self.state.error.incorrect_galaxy_sizes.contains(&gc.position) {
+                if self
+                    .state
+                    .error
+                    .incorrect_galaxy_sizes
+                    .contains(&gc.position)
+                {
                     classes.push("incorrect-size");
                 }
                 element.set_attribute("class", &classes.join(" "))?;
