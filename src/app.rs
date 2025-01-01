@@ -119,13 +119,13 @@ impl App {
                     let g = document.create_element_ns(SVG_NAMESPACE, "g")?;
                     g.set_attribute("class", "galaxy-center")?;
                     svg.append_child(&g)?;
+                    let cx = WALL_SIZE / 2.0
+                        + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.column + 1) as f64;
+                    let cy = WALL_SIZE / 2.0
+                        + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.row + 1) as f64;
 
                     {
-                        let cx = WALL_SIZE / 2.0
-                            + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.column + 1) as f64;
-                        let cy = WALL_SIZE / 2.0
-                            + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.row + 1) as f64;
-                        let r = CELL_SIZE / 3.0 - WALL_SIZE;
+                        let r = CELL_SIZE / 2.5 - WALL_SIZE;
                         let circle = document.create_element_ns(SVG_NAMESPACE, "circle")?;
                         circle.set_attribute("cx", &cx.to_string())?;
                         circle.set_attribute("cy", &cy.to_string())?;
@@ -134,9 +134,10 @@ impl App {
                     }
                     {
                         let text =document.create_element_ns(SVG_NAMESPACE, "text")?;
-                        text.set_attribute("x", "50%")?;
-                        text.set_attribute("y", "50%")?;
+                        text.set_attribute("x", &cx.to_string())?;
+                        text.set_attribute("y", &cy.to_string())?;
                         text.set_attribute("text-anchor", "middle")?;
+                        text.set_attribute("dominant-baseline", "central")?;
                         if let Some(size) = center.size {
                             text.set_text_content(Some(&size.to_string()));
                         }
