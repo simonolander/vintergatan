@@ -124,7 +124,7 @@ impl Board {
     }
 
     pub fn compute_error(&self, objective: &Objective) -> BoardError {
-        let dangling_segments = self.get_dangling_borders().collect();
+        let dangling_borders = self.get_dangling_borders().collect();
 
         let galaxies = self.get_galaxies();
         let galaxy_by_position: HashMap<Position, &Galaxy> = galaxies
@@ -196,7 +196,7 @@ impl Board {
             .collect();
 
         BoardError {
-            dangling_segments,
+            dangling_borders,
             incorrect_galaxy_sizes,
             centerless_cells,
             cut_centers,

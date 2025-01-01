@@ -4,7 +4,7 @@ use crate::model::position::Position;
 
 #[derive(Debug, Default)]
 pub struct BoardError {
-    pub dangling_segments: HashSet<Border>,
+    pub dangling_borders: HashSet<Border>,
     pub incorrect_galaxy_sizes: HashSet<Position>,
     pub centerless_cells: HashSet<Position>,
     pub cut_centers: HashSet<Position>,

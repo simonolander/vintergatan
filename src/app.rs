@@ -232,7 +232,7 @@ impl App {
     fn render_borders(&self) -> Result<(), JsValue> {
         for (border, element) in &self.border_elements {
             let mut classes = vec!["wall-group"];
-            if self.state.error.dangling_segments.contains(&border) {
+            if self.state.error.dangling_borders.contains(&border) {
                 classes.push("dangling");
             }
             if self.state.board.is_wall(border.p1(), border.p2()) {
