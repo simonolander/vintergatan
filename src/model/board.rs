@@ -41,6 +41,14 @@ impl Board {
             && position.column < self.width as i32
     }
 
+    fn get_positions(&self) -> impl Iterator<Item = Position> + use<'_> {
+        (0..self.height).into_iter().flat_map(move |row| {
+            (0..self.width)
+                .into_iter()
+                .map(move |col| Position::new(row as i32, col as i32))
+        })
+    }
+
     pub fn is_active(&self, border: &Border) -> bool {
         self.is_wall(border.p1(), border.p2())
     }
@@ -101,15 +109,26 @@ impl Board {
     pub fn compute_error(&self, objective: &Objective) -> BoardError {
         let dangling_segments = self.get_dangling_borders().collect();
 
-        let universe = self.get_universe();
-        let galaxies = universe.get_galaxies();
-        let galaxy_by_center: HashMap<Position, &Galaxy> = galaxies
-            .iter()
-            .map(|galaxy| (galaxy.center(), galaxy))
-            .collect();
+        let galaxies = self.get_universe().get_galaxies();
         let galaxy_by_position: HashMap<Position, &Galaxy> = galaxies
             .iter()
             .flat_map(|galaxy| galaxy.get_positions().copied().map(move |p| (p, galaxy)))
+            .collect();
+        let galaxy_by_objective_center: HashMap<Position, &Galaxy> = objective
+            .centers
+            .iter()
+            .map(|gc| {
+                let some_position_around_center = match gc.position.get_center_placement() {
+                    CenterPlacement::Center(p) => p,
+                    CenterPlacement::VerticalBorder(b) => b.p1(),
+                    CenterPlacement::HorizontalBorder(b) => b.p1(),
+                    CenterPlacement::Intersection(r) => r.top_left(),
+                };
+                let &galaxy = galaxy_by_position
+                    .get(&some_position_around_center)
+                    .unwrap();
+                (gc.position, galaxy)
+            })
             .collect();
 
         let cut_centers: HashSet<Position> = objective
@@ -119,9 +138,45 @@ impl Board {
             .filter(|center| self.is_center_cut(center))
             .collect();
 
-        let asymmetric_centers = Default::default();
-        let incorrect_galaxy_sizes = Default::default();
-        let centerless_cells = Default::default();
+        let incorrect_galaxy_sizes = objective
+            .centers
+            .iter()
+            .filter_map(|gc| {
+                if let Some(size) = gc.size {
+                    let galaxy = galaxy_by_objective_center.get(&gc.position).unwrap();
+                    if galaxy.size() != size {
+                        Some(gc.position)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let asymmetric_centers = objective
+            .centers
+            .iter()
+            .filter_map(|gc| {
+                let galaxy = galaxy_by_objective_center.get(&gc.position).unwrap();
+                if galaxy.center() != gc.position {
+                    Some(gc.position)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let centerfull_cells: HashSet<Position> = galaxy_by_objective_center
+            .values()
+            .flat_map(|galaxy| galaxy.get_positions())
+            .copied()
+            .collect();
+        let centerless_cells = self
+            .get_positions()
+            .filter(|p| !centerfull_cells.contains(p))
+            .collect();
 
         BoardError {
             dangling_segments,

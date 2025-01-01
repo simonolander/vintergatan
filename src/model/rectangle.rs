@@ -34,6 +34,10 @@ impl Rectangle {
         self.width() * self.height()
     }
 
+    pub fn top_left(&self) -> Position {
+        Position::new(self.min_row, self.min_column)
+    }
+
     pub fn positions(&self) -> Vec<Position> {
         (self.min_row..self.max_row)
             .flat_map(|row| {
