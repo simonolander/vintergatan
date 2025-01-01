@@ -9,6 +9,7 @@ use std::rc::Rc;
 use web_sys::wasm_bindgen::closure::Closure;
 use web_sys::wasm_bindgen::{JsCast, JsValue};
 use web_sys::{window, Document, Element, Event};
+use web_sys::js_sys::Atomics::or_bigint;
 
 const VIEW_BOX_SIZE: f64 = 100.0;
 const WALL_CELL_RATIO: f64 = 0.1;
@@ -105,6 +106,7 @@ impl App {
             }
 
             {
+                // Centers
                 let mut app = app.borrow_mut();
                 for center in app
                     .state
@@ -114,18 +116,33 @@ impl App {
                     .cloned()
                     .collect::<Vec<_>>()
                 {
-                    let cx = WALL_SIZE / 2.0
-                        + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.column + 1) as f64;
-                    let cy = WALL_SIZE / 2.0
-                        + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.row + 1) as f64;
-                    let r = CELL_SIZE / 3.0 - WALL_SIZE;
-                    let circle = document.create_element_ns(SVG_NAMESPACE, "circle")?;
-                    circle.set_attribute("cx", &cx.to_string())?;
-                    circle.set_attribute("cy", &cy.to_string())?;
-                    circle.set_attribute("r", &r.to_string())?;
-                    circle.set_attribute("class", "galaxy-center")?;
-                    svg.append_child(&circle)?;
-                    app.galaxy_center_elements.insert(center.position, circle);
+                    let g = document.create_element_ns(SVG_NAMESPACE, "g")?;
+                    g.set_attribute("class", "galaxy-center")?;
+                    svg.append_child(&g)?;
+
+                    {
+                        let cx = WALL_SIZE / 2.0
+                            + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.column + 1) as f64;
+                        let cy = WALL_SIZE / 2.0
+                            + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.row + 1) as f64;
+                        let r = CELL_SIZE / 3.0 - WALL_SIZE;
+                        let circle = document.create_element_ns(SVG_NAMESPACE, "circle")?;
+                        circle.set_attribute("cx", &cx.to_string())?;
+                        circle.set_attribute("cy", &cy.to_string())?;
+                        circle.set_attribute("r", &r.to_string())?;
+                        g.append_child(&circle)?;
+                    }
+                    {
+                        let text =document.create_element_ns(SVG_NAMESPACE, "text")?;
+                        text.set_attribute("x", "50%")?;
+                        text.set_attribute("y", "50%")?;
+                        text.set_attribute("text-anchor", "middle")?;
+                        if let Some(size) = center.size {
+                            text.set_text_content(Some(&size.to_string()));
+                        }
+                        g.append_child(&text)?;
+                    }
+                    app.galaxy_center_elements.insert(center.position, g);
                 }
             }
 
