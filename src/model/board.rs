@@ -177,7 +177,7 @@ impl Board {
             .iter()
             .filter_map(|gc| {
                 let galaxy = galaxy_by_objective_center.get(&gc.position).unwrap();
-                if galaxy.center() != gc.position {
+                if galaxy.center() != gc.position || !galaxy.is_valid() {
                     Some(gc.position)
                 } else {
                     None
@@ -285,7 +285,6 @@ impl Board {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
 
@@ -300,5 +299,4 @@ mod tests {
             assert_eq!(galaxies[0].size(), 1);
         }
     }
-
 }
