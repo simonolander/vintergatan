@@ -1,4 +1,3 @@
-use crate::model::board_error::BoardError;
 use crate::model::border::Border;
 use crate::model::position::Position;
 use crate::model::state::State;
@@ -24,6 +23,8 @@ pub struct App {
     galaxy_center_elements: HashMap<Position, Element>,
     cell_elements: HashMap<Position, Element>,
     new_game_button: Element,
+    document: Document,
+    svg: Element,
 }
 
 impl App {
@@ -36,11 +37,13 @@ impl App {
             border_elements: HashMap::new(),
             galaxy_center_elements: HashMap::new(),
             cell_elements: HashMap::new(),
+            document: window().unwrap().document().unwrap(),
             new_game_button: document.create_element_ns(SVG_NAMESPACE, "svg")?,
+            svg: document.create_element_ns(SVG_NAMESPACE, "svg")?
         }));
 
         {
-            let svg = document.create_element_ns(SVG_NAMESPACE, "svg")?;
+            let svg = app.borrow().svg.clone();
             svg.set_attribute("viewBox", &format!("0 0 {VIEW_BOX_SIZE} {VIEW_BOX_SIZE}"))?;
             svg.set_id("board");
             body.append_child(&svg)?;
@@ -127,47 +130,7 @@ impl App {
                 }
             }
 
-            {
-                // Centers
-                let mut app = app.borrow_mut();
-                for center in app
-                    .state
-                    .objective
-                    .centers
-                    .iter()
-                    .cloned()
-                    .collect::<Vec<_>>()
-                {
-                    let g = document.create_element_ns(SVG_NAMESPACE, "g")?;
-                    g.set_attribute("class", "galaxy-center")?;
-                    svg.append_child(&g)?;
-                    let cx = WALL_SIZE / 2.0
-                        + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.column + 1) as f64;
-                    let cy = WALL_SIZE / 2.0
-                        + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.row + 1) as f64;
-
-                    {
-                        let r = CELL_SIZE / 2.5 - WALL_SIZE;
-                        let circle = document.create_element_ns(SVG_NAMESPACE, "circle")?;
-                        circle.set_attribute("cx", &cx.to_string())?;
-                        circle.set_attribute("cy", &cy.to_string())?;
-                        circle.set_attribute("r", &r.to_string())?;
-                        g.append_child(&circle)?;
-                    }
-                    {
-                        let text = document.create_element_ns(SVG_NAMESPACE, "text")?;
-                        text.set_attribute("x", &cx.to_string())?;
-                        text.set_attribute("y", &cy.to_string())?;
-                        text.set_attribute("text-anchor", "middle")?;
-                        text.set_attribute("dominant-baseline", "central")?;
-                        if let Some(size) = center.size {
-                            text.set_text_content(Some(&size.to_string()));
-                        }
-                        g.append_child(&text)?;
-                    }
-                    app.galaxy_center_elements.insert(center.position, g);
-                }
-            }
+            app.borrow_mut().init_galaxy_centers()?;
 
             let pre = document.create_element("pre")?;
             pre.set_text_content(Some(&app.borrow().state.universe.to_string()));
@@ -241,6 +204,54 @@ impl App {
         Ok(app)
     }
 
+    fn init_galaxy_centers(&mut self) -> Result<(), JsValue> {
+        for center in self.galaxy_center_elements.values() {
+            center.remove();
+        }
+        self.galaxy_center_elements.clear();
+
+        // Centers
+        for center in self
+            .state
+            .objective
+            .centers
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>()
+        {
+            let g = self.document.create_element_ns(SVG_NAMESPACE, "g")?;
+            g.set_attribute("class", "galaxy-center")?;
+            self.svg.append_child(&g)?;
+            let cx = WALL_SIZE / 2.0
+                + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.column + 1) as f64;
+            let cy =
+                WALL_SIZE / 2.0 + (WALL_SIZE + CELL_SIZE) / 2.0 * (center.position.row + 1) as f64;
+
+            {
+                let r = CELL_SIZE / 2.5 - WALL_SIZE;
+                let circle = self.document.create_element_ns(SVG_NAMESPACE, "circle")?;
+                circle.set_attribute("cx", &cx.to_string())?;
+                circle.set_attribute("cy", &cy.to_string())?;
+                circle.set_attribute("r", &r.to_string())?;
+                g.append_child(&circle)?;
+            }
+            {
+                let text = self.document.create_element_ns(SVG_NAMESPACE, "text")?;
+                text.set_attribute("x", &cx.to_string())?;
+                text.set_attribute("y", &cy.to_string())?;
+                text.set_attribute("text-anchor", "middle")?;
+                text.set_attribute("dominant-baseline", "central")?;
+                if let Some(size) = center.size {
+                    text.set_text_content(Some(&size.to_string()));
+                }
+                g.append_child(&text)?;
+            }
+            self.galaxy_center_elements.insert(center.position, g);
+        }
+
+        Ok(())
+    }
+
     fn on_border_click(&mut self, border: Border) -> Result<(), JsValue> {
         let p1 = border.p1();
         let p2 = border.p2();
@@ -259,6 +270,9 @@ impl App {
     }
 
     fn on_new_game_click(&mut self) -> Result<(), JsValue> {
+        self.state = State::generate(SIZE as usize);
+        self.init_galaxy_centers()?;
+        self.render()?;
         Ok(())
     }
 
