@@ -307,7 +307,6 @@ mod tests {
         use crate::model::galaxy::Galaxy;
         use crate::model::position::Position;
         use crate::model::rectangle::Rectangle;
-        use crate::model::universe::Universe;
         use itertools::Itertools;
         use proptest::proptest;
 

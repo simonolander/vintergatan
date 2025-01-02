@@ -1,11 +1,22 @@
 use std::fmt::{Display, Formatter};
 
 use rand::Rng;
+use crate::model::border::Border;
+use crate::model::position::CenterPlacement::{Center, HorizontalBorder, Intersection, VerticalBorder};
+use crate::model::rectangle::Rectangle;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Copy, Clone, Hash)]
 pub struct Position {
     pub row: i32,
     pub column: i32,
+}
+
+#[derive(Eq, PartialEq, Debug)]
+pub enum CenterPlacement {
+    Center(Position),
+    VerticalBorder(Border),
+    HorizontalBorder(Border),
+    Intersection(Rectangle),
 }
 
 impl Position {
@@ -55,7 +66,33 @@ impl Position {
     pub fn is_adjacent_to(&self, other: &Position) -> bool {
         let delta_row = self.row.abs_diff(other.row);
         let delta_column = self.column.abs_diff(other.column);
-        delta_row.checked_add(delta_column).map(|it| it == 1).unwrap_or(false)
+        delta_row
+            .checked_add(delta_column)
+            .map(|it| it == 1)
+            .unwrap_or(false)
+    }
+
+    /// Interpreting this position as a center, i.e. a position that could lie on borders,
+    /// returns the positions of the cells surrounding this center
+    pub fn get_center_placement(&self) -> CenterPlacement {
+        let r1 = self.row / 2;
+        let c1 = self.column / 2;
+        if self.row % 2 == 0 {
+            if self.column % 2 == 0 {
+                Center(Position::new(r1, c1))
+            } else {
+                let c2 = c1 + 1;
+                VerticalBorder(Border::new(Position::new(r1, c1), Position::new(r1, c2)))
+            }
+        } else {
+            let r2 = r1 + 1;
+            if self.column % 2 == 0 {
+                HorizontalBorder(Border::new(Position::new(r1, c1), Position::new(r2, c1)))
+            } else {
+                let c2 = c1 + 1;
+                Intersection(Rectangle::new(r1, r2, c1, c2))
+            }
+        }
     }
 }
 
@@ -81,18 +118,43 @@ impl From<(i32, i32)> for Position {
 mod tests {
     use std::fmt::Debug;
 
-    use proptest::prelude::*;
-
     use crate::model::position::Position;
+    use proptest::prelude::*;
+    use rand::thread_rng;
 
-    fn prop_assert_eq_vec_orderless<T: Eq + Debug>(left: Vec<T>, right: Vec<T>) -> Result<(), TestCaseError> {
-        prop_assert_eq!(left.len(), right.len(), "assertion failed: `(left.len() == right.len())`\n  left: `{:?}`,\n right: `{:?}`", left, right);
+    fn prop_assert_eq_vec_orderless<T: Eq + Debug>(
+        left: Vec<T>,
+        right: Vec<T>,
+    ) -> Result<(), TestCaseError> {
+        prop_assert_eq!(
+            left.len(),
+            right.len(),
+            "assertion failed: `(left.len() == right.len())`\n  left: `{:?}`,\n right: `{:?}`",
+            left,
+            right
+        );
         for item in &left {
             let left_count = left.iter().filter(|&it| it == item).count();
             let right_count = right.iter().filter(|&it| it == item).count();
             prop_assert_eq!(left_count, right_count, "assertion failed: `(left.count({:?}) == right.count({:?}))`\n  left: `{:?}`,\n right: `{:?}`", item, item, left, right);
         }
         Ok(())
+    }
+
+    mod get_center_placement {
+        use crate::model::position::{CenterPlacement, Position};
+
+        #[test]
+        fn center_within_cell_should_return_that_cell() {
+            assert_eq!(Position::new(0, 0).get_center_placement(), CenterPlacement::Center(Position::new(0, 0)));
+            assert_eq!(Position::new(0, 2).get_center_placement(), CenterPlacement::Center(Position::new(0, 1)));
+            assert_eq!(Position::new(2, 0).get_center_placement(), CenterPlacement::Center(Position::new(1, 0)));
+            assert_eq!(Position::new(2, 2).get_center_placement(), CenterPlacement::Center(Position::new(1, 1)));
+            assert_eq!(Position::new(10, 10).get_center_placement(), CenterPlacement::Center(Position::new(5, 5)));
+            assert_eq!(Position::new(10, 20).get_center_placement(), CenterPlacement::Center(Position::new(5, 10)));
+            assert_eq!(Position::new(20, 10).get_center_placement(), CenterPlacement::Center(Position::new(10, 5)));
+            assert_eq!(Position::new(20, 20).get_center_placement(), CenterPlacement::Center(Position::new(10, 10)));
+        }
     }
 
     proptest! {
@@ -137,7 +199,7 @@ mod tests {
 
         #[test]
         fn test_random(width in 1..i32::MAX, height in 1..i32::MAX) {
-            let p = Position::random(width as usize, height as usize);
+            let p = Position::random(width as usize, height as usize, &mut thread_rng());
             prop_assert!(p.column >= 0);
             prop_assert!(p.column < width);
             prop_assert!(p.row >= 0);

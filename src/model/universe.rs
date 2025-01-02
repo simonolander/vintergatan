@@ -1,5 +1,6 @@
 use crate::model::galaxy::Galaxy;
 use crate::model::position::Position;
+use petgraph::data::Build;
 use petgraph::graphmap::UnGraphMap;
 use petgraph::visit::{Dfs, Walker};
 use rand::prelude::SliceRandom;
@@ -8,7 +9,7 @@ use rand::{random, Rng, SeedableRng};
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Universe {
     width: usize,
     height: usize,
@@ -16,19 +17,8 @@ pub struct Universe {
 }
 
 impl Universe {
-    pub fn new(width: usize, height: usize) -> Universe {
-        let mut graph: UnGraphMap<Position, ()> = UnGraphMap::new();
-        for row in 0..height {
-            for column in 0..width {
-                let position = Position::from((row, column));
-                graph.add_node(position);
-            }
-        }
-        Universe {
-            width,
-            height,
-            graph,
-        }
+    pub fn width(&self) -> usize {
+        self.width
     }
 
     pub fn generate(width: usize, height: usize) -> Universe {
@@ -58,6 +48,23 @@ impl Universe {
         }
         assert!(universe.is_valid());
         universe
+    }
+}
+
+impl Universe {
+    pub fn new(width: usize, height: usize) -> Universe {
+        let mut graph: UnGraphMap<Position, ()> = UnGraphMap::new();
+        for row in 0..height {
+            for column in 0..width {
+                let position = Position::from((row, column));
+                graph.add_node(position);
+            }
+        }
+        Universe {
+            width,
+            height,
+            graph,
+        }
     }
 
     fn generate_step(&mut self, rng: &mut impl Rng) -> bool {
@@ -273,7 +280,7 @@ impl Universe {
 
     pub fn get_positions(&self) -> impl Iterator<Item = Position> + '_ {
         (0..self.height)
-            .flat_map(|row| (0..self.width).map(move |col| (row, col)))
+            .flat_map(move |row| (0..self.width).map(move |col| (row, col)))
             .map(|t| Position::from(t))
     }
 }
@@ -312,8 +319,39 @@ impl Display for Universe {
                     (true, true, true, true) => write!(f, "┼─")?,
                 }
             }
-            write!(f, "\n")?;
+            if row != self.height {
+                write!(f, "\n")?;
+            }
         }
         Ok(())
+    }
+}
+
+impl From<&[Galaxy]> for Universe {
+    fn from(galaxies: &[Galaxy]) -> Self {
+        let width = galaxies
+            .iter()
+            .flat_map(|g| g.get_positions())
+            .map(|p| p.column + 1)
+            .max()
+            .unwrap_or(0) as usize;
+        let height = galaxies
+            .iter()
+            .flat_map(|g| g.get_positions())
+            .map(|p| p.row + 1)
+            .max()
+            .unwrap_or(0) as usize;
+        let mut universe = Universe::new(width, height);
+        for g in galaxies {
+            for p1 in g.get_positions() {
+                for p2 in &p1.adjacent() {
+                    if g.contains_position(p2) {
+                        universe.graph.add_edge(*p1, *p2, ());
+                    }
+                }
+            }
+        }
+
+        universe
     }
 }
