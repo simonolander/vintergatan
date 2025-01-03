@@ -21,7 +21,8 @@ impl Objective {
             .iter()
             .map(|galaxy| GalaxyCenter {
                 position: galaxy.center(),
-                size: Some(galaxy.size()),
+                size: None,
+                // size: Some(galaxy.size()),
             })
             .collect();
 

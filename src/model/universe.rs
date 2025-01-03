@@ -42,9 +42,6 @@ impl Universe {
                 .into_iter()
                 .min_by_key(|universe| universe.get_score())
                 .unwrap_or(universe);
-
-            // println!("{}", universe);
-            // println!("{}", _iteration);
         }
         assert!(universe.is_valid());
         universe
@@ -91,11 +88,28 @@ impl Universe {
             true
         } else {
             // If g1_with_p2 is asymmetric, we need to add p3 to it
-            let p3 = g1.mirror_position(&p2);
-            if self.is_outside(&p3) {
-                // If p3 is outside the universe, we cannot add p2 to g1, so we abort
-                false
-            } else {
+            let p3_option = {
+                let mut p3_candidates = Vec::new();
+                {
+                    let p3 = g1.mirror_position(&p2);
+                    if self.is_inside(&p3) {
+                        p3_candidates.push(p3);
+                    }
+                }
+                for p3 in self.adjacent_non_neighbours(&p2) {
+                    if g1_with_p2.with_position(&p3).is_symmetric() {
+                        p3_candidates.push(p3);
+                    }
+                }
+                if p3_candidates.is_empty() {
+                    None
+                }
+                else {
+                    p3_candidates.get(rng.gen_range(0..p3_candidates.len())).cloned()
+                }
+            };
+
+            if let Some(p3) = p3_option {
                 let g2 = self.get_galaxy(&p2);
                 let g3 = self.get_galaxy(&p3);
 
@@ -110,6 +124,10 @@ impl Universe {
                 self.make_neighbours(&p1, &p2);
                 self.make_neighbours(&p1, &p3);
                 true
+            }
+            else {
+                // No candidates for p3 found to make g1 with p2 symmetric
+                false
             }
         }
     }

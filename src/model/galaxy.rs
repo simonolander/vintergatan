@@ -4,6 +4,7 @@ use petgraph::algo::connected_components;
 use petgraph::graphmap::UnGraphMap;
 use std::cmp::{max, min};
 use std::collections::HashSet;
+use crate::model::border::Border;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Galaxy {
@@ -30,6 +31,18 @@ impl Galaxy {
 
     pub fn from_rect(rect: &Rectangle) -> Galaxy {
         Self::from_positions(rect.positions())
+    }
+
+    pub fn get_borders(&self) -> impl IntoIterator<Item = Border> {
+        let mut borders = HashSet::new();
+        for p1 in self.get_positions() {
+            for p2 in &p1.adjacent() {
+                if !self.contains_position(p2) {
+                    borders.insert(Border::new(*p1, *p2));
+                }
+            }
+        }
+        borders
     }
 
     /// Returns the number of positions in this galaxy

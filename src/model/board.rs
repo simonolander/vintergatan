@@ -3,11 +3,9 @@ use crate::model::border::Border;
 use crate::model::galaxy::Galaxy;
 use crate::model::objective::Objective;
 use crate::model::position::{CenterPlacement, Position};
-use crate::model::universe::Universe;
 use itertools::Itertools;
 use petgraph::graphmap::UnGraphMap;
 use petgraph::visit::{FilterEdge, Visitable};
-use petgraph::Direction;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 #[derive(Clone, Debug)]

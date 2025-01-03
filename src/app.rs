@@ -249,6 +249,8 @@ impl App {
             self.galaxy_center_elements.insert(center.position, g);
         }
 
+        self.render()?;
+
         Ok(())
     }
 
