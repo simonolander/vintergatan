@@ -42,13 +42,16 @@ body {
 .wall-line {
   stroke: #5a5a5a10;
   stroke-linecap: butt;
-  cursor: pointer;
 }
 
 .wall-touch {
   pointer-events: all;
   fill: none;
+}
+
+.wall-line, .wall-touch {
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .wall-group.active .wall-line {
