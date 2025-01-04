@@ -214,13 +214,18 @@ impl Universe {
             score += current_length.pow(2);
         }
 
+        let galaxies = self.get_galaxies();
+
         // Add points for big rectangles
-        for galaxy in self.get_galaxies() {
+        for galaxy in &galaxies {
             for rect in galaxy.rectangles() {
                 let area = rect.area() as i64;
                 score += area.pow(2);
             }
         }
+
+        // Add points for many galaxies
+        score += 3 * galaxies.len() as i64;
 
         score
     }
