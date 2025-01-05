@@ -1,4 +1,5 @@
 use crate::model::border::Border;
+use crate::model::history::HistoryEntry;
 use crate::model::position::Position;
 use crate::model::state::State;
 use itertools::Itertools;
@@ -39,7 +40,7 @@ impl App {
             cell_elements: HashMap::new(),
             document: window().unwrap().document().unwrap(),
             new_game_button: document.create_element_ns(SVG_NAMESPACE, "svg")?,
-            svg: document.create_element_ns(SVG_NAMESPACE, "svg")?
+            svg: document.create_element_ns(SVG_NAMESPACE, "svg")?,
         }));
 
         {
@@ -259,16 +260,13 @@ impl App {
         let p2 = border.p2();
         self.state.board.toggle_wall(p1, p2);
         self.state.error = None;
+        self.state.history.push(HistoryEntry::ToggleBorder(border));
         self.render()
     }
 
     fn on_check_click(&mut self) -> Result<(), JsValue> {
         self.state.error = Some(self.state.board.compute_error(&self.state.objective));
         self.render()
-    }
-
-    fn on_undo_click(&mut self) -> Result<(), JsValue> {
-        Ok(())
     }
 
     fn on_new_game_click(&mut self) -> Result<(), JsValue> {
@@ -278,7 +276,27 @@ impl App {
         Ok(())
     }
 
+    fn on_undo_click(&mut self) -> Result<(), JsValue> {
+        if let Some(entry) = self.state.history.undo() {
+            match entry {
+                HistoryEntry::ToggleBorder(border) => {
+                    self.state.board.toggle_wall(border.p1(), border.p2());
+                }
+            }
+            self.render()?;
+        }
+        Ok(())
+    }
+
     fn on_redo_click(&mut self) -> Result<(), JsValue> {
+        if let Some(entry) = self.state.history.redo() {
+            match entry {
+                HistoryEntry::ToggleBorder(border) => {
+                    self.state.board.toggle_wall(border.p1(), border.p2());
+                }
+            }
+            self.render()?;
+        }
         Ok(())
     }
 
