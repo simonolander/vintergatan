@@ -283,6 +283,7 @@ impl App {
                     self.state.board.toggle_wall(border.p1(), border.p2());
                 }
             }
+            self.state.error = None;
             self.render()?;
         }
         Ok(())
@@ -295,6 +296,7 @@ impl App {
                     self.state.board.toggle_wall(border.p1(), border.p2());
                 }
             }
+            self.state.error = None;
             self.render()?;
         }
         Ok(())
