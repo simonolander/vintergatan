@@ -38,6 +38,35 @@ impl Rectangle {
         Position::new(self.min_row, self.min_column)
     }
 
+    pub fn top_right(&self) -> Position {
+        Position::new(self.min_row, self.max_column)
+    }
+
+    pub fn bottom_left(&self) -> Position {
+        Position::new(self.max_row, self.min_column)
+    }
+
+    pub fn bottom_right(&self) -> Position {
+        Position::new(self.max_row, self.max_column)
+    }
+
+    pub fn corners(&self) -> Vec<Position> {
+        let single_row = self.min_row == self.max_row;
+        let single_column = self.min_column == self.max_column;
+        if single_row && single_column {
+            vec![self.top_left()]
+        } else if single_row || single_column {
+            vec![self.top_left(), self.bottom_right()]
+        } else {
+            vec![
+                self.top_left(),
+                self.top_right(),
+                self.bottom_left(),
+                self.bottom_right(),
+            ]
+        }
+    }
+
     pub fn positions(&self) -> Vec<Position> {
         (self.min_row..self.max_row)
             .flat_map(|row| {

@@ -1,10 +1,12 @@
+use crate::model::border::Border;
 use crate::model::position::Position;
 use crate::model::rectangle::Rectangle;
+use itertools::Itertools;
 use petgraph::algo::connected_components;
 use petgraph::graphmap::UnGraphMap;
 use std::cmp::{max, min};
-use std::collections::HashSet;
-use crate::model::border::Border;
+use std::collections::{HashMap, HashSet, LinkedList};
+use std::fmt::Display;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Galaxy {
@@ -174,8 +176,80 @@ impl Galaxy {
         self.positions.insert(p);
     }
 
+    pub fn get_neighbours(&self, p: &Position) -> Vec<Position> {
+        p.adjacent()
+            .into_iter()
+            .filter(|neighbour| self.contains_position(neighbour))
+            .collect()
+    }
+
     pub fn get_positions(&self) -> impl Iterator<Item = &Position> {
         self.positions.iter()
+    }
+
+    pub fn get_swirl(&self) -> f64 {
+        type V2 = (f64, f64);
+        let hamming_distances = self.get_hamming_distances();
+        let center = self.center();
+        let center: V2 = (center.row as f64 / 2.0, center.column as f64 / 2.0);
+        let angles: HashMap<Position, f64> = self
+            .positions
+            .iter()
+            .copied()
+            .map(|p| {
+                (
+                    p,
+                    (p.row as f64 - center.0).atan2(p.column as f64 - center.1),
+                )
+            })
+            .collect();
+
+        let mut swirl = 0.0;
+        for p in &self.positions {
+            let angle = angles[&p];
+            let hamming_distance = hamming_distances[&p];
+            if hamming_distance != 0 {
+                for parent in self
+                    .get_neighbours(&p)
+                    .iter()
+                    .filter(|n| hamming_distances[&n] < hamming_distance)
+                {
+                    swirl += angle - angles[&parent];
+                }
+            }
+        }
+
+        swirl
+    }
+
+    fn get_hamming_distances(&self) -> HashMap<Position, usize> {
+        let mut queue: LinkedList<Position> = LinkedList::new();
+        let mut hamming_distances: HashMap<Position, usize> = HashMap::new();
+        for p in self.center().get_center_placement().get_positions() {
+            hamming_distances.insert(p, 0);
+            for n in self.get_neighbours(&p) {
+                queue.push_back(n);
+            }
+        }
+        while let Some(p) = queue.pop_front() {
+            if hamming_distances.contains_key(&p) {
+                continue;
+            }
+            let neighbours = self.get_neighbours(&p);
+            let min_neighbour_distance = neighbours
+                .iter()
+                .filter_map(|n| hamming_distances.get(n))
+                .min()
+                .copied()
+                .unwrap();
+            hamming_distances.insert(p, min_neighbour_distance + 1);
+            for n in neighbours {
+                if !hamming_distances.contains_key(&n) {
+                    queue.push_back(n);
+                }
+            }
+        }
+        hamming_distances
     }
 
     /// Returns the rectangles that make up the galaxy, by finding the largest rectangle, subtracting

@@ -6,7 +6,7 @@ use crate::model::universe::Universe;
 mod app;
 mod model;
 
-const CONSOLE: bool = false;
+const CONSOLE: bool = true;
 
 fn main() {
     if CONSOLE {

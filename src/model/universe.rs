@@ -182,7 +182,7 @@ impl Universe {
     pub fn get_score(&self) -> i64 {
         let mut score: i64 = 0;
 
-        // Add points for long, straight, horizontal borders
+        // Penalize for long, straight, horizontal borders
         for row in 1..self.height as i32 {
             let mut current_length: i64 = 0;
             for col in 0..self.width as i32 {
@@ -198,7 +198,7 @@ impl Universe {
             score += current_length.pow(2);
         }
 
-        // Add points for long, straight, vertical borders
+        // Penalize for long, straight, vertical borders
         for col in 1..self.width as i32 {
             let mut current_length: i64 = 0;
             for row in 0..self.height as i32 {
@@ -216,7 +216,7 @@ impl Universe {
 
         let galaxies = self.get_galaxies();
 
-        // Add points for big rectangles
+        // Penalize for big rectangles
         for galaxy in &galaxies {
             for rect in galaxy.rectangles() {
                 let area = rect.area() as i64;
@@ -224,8 +224,11 @@ impl Universe {
             }
         }
 
-        // Add points for many galaxies
+        // Penalize for many galaxies
         score += 3 * galaxies.len() as i64;
+
+        // Reward galaxies with high swirl
+        score -= galaxies.iter().map(move |g| g.get_swirl()).sum::<f64>() as i64;
 
         score
     }
