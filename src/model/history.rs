@@ -69,7 +69,7 @@ mod tests {
     use crate::model::position::Position;
 
     fn some_entry() -> HistoryEntry {
-        HistoryEntry::ToggleBorder(Border::new(Position::new(0, 0), Position::new(0, 1)));
+        HistoryEntry::ToggleBorder(Border::new(Position::new(0, 0), Position::new(0, 1)))
     }
 
     #[test]
@@ -85,6 +85,19 @@ mod tests {
         history.push(some_entry());
         let entry = history.undo();
         assert!(entry.is_some());
-        assert_eq!(entry.unwrap(), some_entry());
+        assert_eq!(entry.unwrap(), &some_entry());
+        assert!(history.has_future());
+    }
+
+    #[test]
+    fn should_not_have_future_after_undo_redo() {
+        let mut history = History::new();
+        let entry = some_entry();
+        history.push(entry.clone());
+        let undo = history.undo();
+        assert_eq!(undo.unwrap(), &entry);
+        let redo = history.redo();
+        assert_eq!(redo.unwrap(), &entry);
+        assert!(!history.has_future());
     }
 }

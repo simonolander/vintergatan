@@ -195,7 +195,7 @@ impl App {
                 redo.set_text_content(Some("Redo"));
                 let app = Rc::clone(&app);
                 let closure = Closure::<dyn FnMut(_)>::new(move |event: Event| {
-                    app.borrow_mut().on_undo_click().unwrap();
+                    app.borrow_mut().on_redo_click().unwrap();
                 });
                 redo.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
                 closure.forget();
