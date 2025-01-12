@@ -228,7 +228,7 @@ impl Universe {
         score += 3 * galaxies.len() as i64;
 
         // Reward galaxies with high swirl
-        score -= galaxies.iter().map(move |g| g.get_swirl()).sum::<f64>() as i64;
+        score -= galaxies.iter().map(|g| g.get_swirl().abs().powi(3)).sum::<f64>() as i64;
 
         score
     }
@@ -285,7 +285,7 @@ impl Universe {
 
     pub fn get_galaxy(&self, p: &Position) -> Galaxy {
         let search = Dfs::new(&self.graph, *p);
-        Galaxy::from_positions(search.iter(&self.graph))
+        Galaxy::from(search.iter(&self.graph))
     }
 
     pub fn is_valid(&self) -> bool {
