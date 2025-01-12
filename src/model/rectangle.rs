@@ -1,4 +1,5 @@
 use crate::model::position::Position;
+use std::ops::Deref;
 
 #[derive(Eq, PartialEq, Default, Debug, Ord, PartialOrd, Copy, Clone)]
 pub struct Rectangle {
@@ -76,6 +77,12 @@ impl Rectangle {
     }
 }
 
+impl From<&(usize, usize)> for Rectangle {
+    fn from((width, height): &(usize, usize)) -> Self {
+        Rectangle::new(0, *height as i32, 0, *width as i32)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::model::rectangle::Rectangle;
@@ -108,5 +115,16 @@ mod test {
         }
 
         type Strategy = BoxedStrategy<Self>;
+    }
+
+    #[test]
+    fn test_from_width_and_height() {
+        for width in 1..10 {
+            for height in 1..10 {
+                let rect = Rectangle::from(&(width, height));
+                assert_eq!(rect, Rectangle::new(0, height as i32, 0, width as i32));
+                assert_eq!(rect.positions().len(), width * height);
+            }
+        }
     }
 }

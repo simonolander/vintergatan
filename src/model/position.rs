@@ -33,6 +33,8 @@ impl CenterPlacement {
 }
 
 impl Position {
+    pub const ZERO: Position = Position { row: 0, column: 0 };
+
     pub fn new(row: i32, column: i32) -> Position {
         Position { row, column }
     }
