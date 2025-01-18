@@ -7,6 +7,7 @@ use std::cmp::{max, min};
 use std::collections::{HashMap, HashSet, LinkedList};
 use std::f64::consts::PI;
 use std::fmt::{Display, Formatter};
+use crate::model::vec2::Vec2;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Galaxy {
@@ -214,6 +215,53 @@ impl Galaxy {
         }
 
         swirl
+    }
+
+    pub fn get_curl(&self) -> f64 {
+        type V2 = (f64, f64);
+        let hamming_distances = self.get_hamming_distances();
+        let center: V2 = {
+            let center = self.center();
+            (center.column as f64 / 2.0, center.row as f64 / 2.0)
+        };
+        let vectors: HashMap<Position, V2> = self
+            .positions
+            .iter()
+            .copied()
+            .map(|p| {
+                (p, (p.column as f64 - center.0, p.row as f64 - center.1))
+            })
+            .collect();
+
+        let mut curl = 0.0;
+        for p in &self.positions {
+            let v = vectors[&p];
+            let hamming_distance = hamming_distances[&p];
+            if hamming_distance != 0 {
+                self.get_neighbours(&p)
+                    .iter()
+                    .filter(|n| hamming_distances[&n] < hamming_distance)
+                    .map(|parent_position| vectors[&parent_position])
+                    .filter(|parent_vector| parent_vector != &(0.0, 0.0))
+                    .map(|parent_vector| {
+                        let angle = v.1.atan2(v.0) - parent_vector.1.atan2(parent_vector.0);
+                        if angle > PI {
+                            angle - 2.0 * PI
+                        } else if angle <= -PI {
+                            angle + 2.0 * PI
+                        } else {
+                            angle
+                        }
+                    })
+                    .for_each(|angle_difference| curl += angle_difference);
+            }
+        }
+
+        curl
+    }
+
+    pub fn get_flow(&self) -> HashMap<Position, Vec2> {
+        HashMap::new()
     }
 
     fn get_hamming_distances(&self) -> HashMap<Position, usize> {
@@ -475,7 +523,6 @@ mod tests {
                     assert_eq!(rects[0], rect);
                 }
             }
-
         }
 
         #[test]
