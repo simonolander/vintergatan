@@ -1,13 +1,13 @@
 use crate::model::border::Border;
 use crate::model::position::Position;
 use crate::model::rectangle::Rectangle;
+use crate::model::vec2::Vec2;
 use petgraph::algo::connected_components;
 use petgraph::graphmap::UnGraphMap;
 use std::cmp::{max, min};
 use std::collections::{HashMap, HashSet, LinkedList};
 use std::f64::consts::PI;
 use std::fmt::{Display, Formatter};
-use crate::model::vec2::Vec2;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Galaxy {
@@ -218,50 +218,59 @@ impl Galaxy {
     }
 
     pub fn get_curl(&self) -> f64 {
-        type V2 = (f64, f64);
-        let hamming_distances = self.get_hamming_distances();
-        let center: V2 = {
-            let center = self.center();
-            (center.column as f64 / 2.0, center.row as f64 / 2.0)
-        };
-        let vectors: HashMap<Position, V2> = self
+        let distances = self.get_hamming_distances();
+        let children_map: HashMap<Position, Vec<Position>> = self
             .positions
             .iter()
-            .copied()
             .map(|p| {
-                (p, (p.column as f64 - center.0, p.row as f64 - center.1))
+                let distance = distances[p];
+                let children: Vec<Position> = self
+                    .get_neighbours(p)
+                    .filter(|n| distances[n] == distance + 1)
+                    .collect();
+                (p, children)
             })
             .collect();
-
         let mut curl = 0.0;
-        for p in &self.positions {
-            let v = vectors[&p];
-            let hamming_distance = hamming_distances[&p];
-            if hamming_distance != 0 {
-                self.get_neighbours(&p)
-                    .iter()
-                    .filter(|n| hamming_distances[&n] < hamming_distance)
-                    .map(|parent_position| vectors[&parent_position])
-                    .filter(|parent_vector| parent_vector != &(0.0, 0.0))
-                    .map(|parent_vector| {
-                        let angle = v.1.atan2(v.0) - parent_vector.1.atan2(parent_vector.0);
-                        if angle > PI {
-                            angle - 2.0 * PI
-                        } else if angle <= -PI {
-                            angle + 2.0 * PI
-                        } else {
-                            angle
-                        }
-                    })
-                    .for_each(|angle_difference| curl += angle_difference);
+        let flows = {
+            let mut flows: HashMap<Position, Vec2> =
+                self.positions.iter().map(|p| (p, Vec2::ZERO)).collect();
+            for p in &self.positions {
+                let mut flow = flows[p];
+                for child in &children_map[p] {
+                    let delta: Vec2 = child.into() - p.into();
+                    flow += delta;
+                    flows.insert(child, flows[child] + delta);
+                }
             }
-        }
+            let (center, children) = {
+                let center = self.center();
+                let children = center.get_center_placement().get_positions().
+            }
+            for p in &self.positions {
+                let distance = distances[&p];
+                let p_vec: Vec2 = p.into();
+                let mut flow = Vec2::ZERO;
+                if distance != 0 {
+                    for neighbour in self.get_neighbours(p) {
+                        let neighbour_distance = distances[&neighbour];
+                        let is_child = neighbour_distance == distance + 1;
+                        let is_parent = neighbour_distance == distance - 1;
+                        if is_child {
+                            flow += neighbour.into() - p_vec
+                        }
+                        if is_parent {
+                            flow += p_vec - neighbour.into()
+                        }
+                    }
+                } else {
+                }
+                flows.insert(*p, flow);
+            }
+            flows
+        };
 
-        curl
-    }
-
-    pub fn get_flow(&self) -> HashMap<Position, Vec2> {
-        HashMap::new()
+        0.0
     }
 
     fn get_hamming_distances(&self) -> HashMap<Position, usize> {

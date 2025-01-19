@@ -1,5 +1,5 @@
 use std::f64::consts::PI;
-use std::ops::{Add, Div, DivAssign, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, Neg, Sub};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec2 {
@@ -63,6 +63,13 @@ impl Add for Vec2 {
     type Output = Vec2;
     fn add(self, other: Vec2) -> Vec2 {
         Vec2::new(self.x + other.x, self.y + other.y)
+    }
+}
+
+impl AddAssign<Vec2> for Vec2 {
+    fn add_assign(&mut self, rhs: Vec2) {
+        self.x += rhs.x;
+        self.y += rhs.y;
     }
 }
 
@@ -250,9 +257,9 @@ mod tests {
     mod angle_between {
         use crate::model::vec2::Vec2;
         use approx::assert_relative_eq;
+        use more_asserts::{assert_gt, assert_le};
         use proptest::proptest;
         use std::f64::consts::PI;
-        use more_asserts::{assert_gt, assert_le};
 
         proptest! {
             #[test]
@@ -281,9 +288,18 @@ mod tests {
 
         #[test]
         fn should_have_correct_angle() {
-            assert_relative_eq!(Vec2::new(1.0, 0.0).angle_between(&Vec2::new(0.0, 1.0)), PI / 2.0);
-            assert_relative_eq!(Vec2::new(1.0, -1.0).angle_between(&Vec2::new(1.0, 0.0)), PI / 4.0);
-            assert_relative_eq!(Vec2::new(1.0, -1.0).angle_between(&Vec2::new(0.0, 1.0)), 3.0 * PI / 4.0);
+            assert_relative_eq!(
+                Vec2::new(1.0, 0.0).angle_between(&Vec2::new(0.0, 1.0)),
+                PI / 2.0
+            );
+            assert_relative_eq!(
+                Vec2::new(1.0, -1.0).angle_between(&Vec2::new(1.0, 0.0)),
+                PI / 4.0
+            );
+            assert_relative_eq!(
+                Vec2::new(1.0, -1.0).angle_between(&Vec2::new(0.0, 1.0)),
+                3.0 * PI / 4.0
+            );
         }
     }
 }

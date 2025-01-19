@@ -6,6 +6,7 @@ use crate::model::position::CenterPlacement::{
 };
 use crate::model::rectangle::Rectangle;
 use rand::Rng;
+use crate::model::vec2::Vec2;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Copy, Clone, Hash)]
 pub struct Position {
@@ -126,6 +127,12 @@ impl From<(usize, usize)> for Position {
 impl From<(i32, i32)> for Position {
     fn from((row, column): (i32, i32)) -> Self {
         Position::new(row, column)
+    }
+}
+
+impl From<&Position> for Vec2 {
+    fn from(p: &Position) -> Self {
+        Vec2::new(p.column as f64, p.row as f64)
     }
 }
 
