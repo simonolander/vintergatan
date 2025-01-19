@@ -1,5 +1,4 @@
 use crate::model::position::Position;
-use std::ops::Deref;
 
 #[derive(Eq, PartialEq, Default, Debug, Ord, PartialOrd, Copy, Clone)]
 pub struct Rectangle {

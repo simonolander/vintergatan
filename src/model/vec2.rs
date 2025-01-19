@@ -39,6 +39,10 @@ impl Vec2 {
         clone
     }
 
+    pub fn angle(&self) -> f64 {
+        self.y.atan2(self.x)
+    }
+
     pub fn angle_between(&self, other: &Vec2) -> f64 {
         if self.is_zero() || other.is_zero() {
             0.0
@@ -151,9 +155,7 @@ mod tests {
     }
 
     mod is_zero {
-        use crate::model::vec2::tests::Vec2Parameters;
         use crate::model::vec2::Vec2;
-        use proptest::prelude::Arbitrary;
         use proptest::proptest;
 
         #[test]
@@ -171,6 +173,7 @@ mod tests {
 
     mod length {
         use crate::model::vec2::Vec2;
+        use approx::assert_abs_diff_eq;
         use proptest::proptest;
 
         #[test]
@@ -185,6 +188,102 @@ mod tests {
                         assert_eq!(v.length(), len.abs());
                     }
             })
+        }
+
+        proptest! {
+            #[test]
+            fn scaling_the_vector_should_scale_the_length(v: Vec2, scale in -100f64..100.0) {
+                assert_abs_diff_eq!(v.length() * scale.abs(), (v * scale).length(), epsilon = 1e-8)
+            }
+        }
+    }
+
+    mod normalize {
+        use crate::model::vec2::Vec2;
+        use approx::assert_relative_eq;
+        use proptest::proptest;
+
+        proptest! {
+            #[test]
+            fn should_have_length_one_after_normalization(v in Vec2::non_zero()) {
+                assert_relative_eq!(v.normalized().length(), 1.0)
+            }
+
+            #[test]
+            fn should_retain_angle(v: Vec2) {
+                assert_relative_eq!(v.normalized().angle(), v.angle());
+            }
+        }
+
+        #[test]
+        fn should_do_nothing_when_zero() {
+            assert_eq!(Vec2::ZERO.normalized(), Vec2::ZERO);
+        }
+    }
+
+    mod angle {
+        use crate::model::vec2::Vec2;
+        use approx::assert_relative_eq;
+        use proptest::proptest;
+        use std::f64::consts::PI;
+
+        proptest! {
+            #[test]
+            fn should_retain_angle_after_scaling(v: Vec2, scale in 0.1f64..100.0) {
+                assert_relative_eq!((v * scale).angle(), v.angle());
+            }
+        }
+
+        #[test]
+        fn should_have_correct_angle() {
+            assert_relative_eq!(Vec2::new(1.0, 0.0).angle(), 0.0);
+            assert_relative_eq!(Vec2::new(1.0, 1.0).angle(), PI / 4.0);
+            assert_relative_eq!(Vec2::new(0.0, 1.0).angle(), PI / 2.0);
+            assert_relative_eq!(Vec2::new(-1.0, 1.0).angle(), 3.0 * PI / 4.0);
+            assert_relative_eq!(Vec2::new(-1.0, 0.0).angle(), PI);
+            assert_relative_eq!(Vec2::new(-1.0, -1.0).angle(), -3.0 * PI / 4.0);
+            assert_relative_eq!(Vec2::new(0.0, -1.0).angle(), -PI / 2.0);
+            assert_relative_eq!(Vec2::new(1.0, -1.0).angle(), -PI / 4.0);
+        }
+    }
+
+    mod angle_between {
+        use crate::model::vec2::Vec2;
+        use approx::assert_relative_eq;
+        use proptest::proptest;
+        use std::f64::consts::PI;
+        use more_asserts::{assert_gt, assert_le};
+
+        proptest! {
+            #[test]
+            fn should_be_zero_if_one_vector_is_zero(v: Vec2) {
+                assert_relative_eq!(v.angle_between(&Vec2::ZERO), 0.0);
+                assert_relative_eq!(Vec2::ZERO.angle_between(&v), 0.0);
+            }
+
+            #[test]
+            fn angle_between_itself_should_be_zero(v: Vec2) {
+                assert_relative_eq!(v.angle_between(&v), 0.0);
+            }
+
+            #[test]
+            fn should_always_be_between_minus_and_plus_pi(v1: Vec2, v2: Vec2) {
+                let angle = v1.angle_between(&v2);
+                assert_gt!(angle, -PI);
+                assert_le!(angle, PI);
+            }
+
+            #[test]
+            fn swapping_the_vectors_should_negate_the_angle(v1: Vec2, v2: Vec2) {
+                assert_relative_eq!(v1.angle_between(&v2), -v2.angle_between(&v1));
+            }
+        }
+
+        #[test]
+        fn should_have_correct_angle() {
+            assert_relative_eq!(Vec2::new(1.0, 0.0).angle_between(&Vec2::new(0.0, 1.0)), PI / 2.0);
+            assert_relative_eq!(Vec2::new(1.0, -1.0).angle_between(&Vec2::new(1.0, 0.0)), PI / 4.0);
+            assert_relative_eq!(Vec2::new(1.0, -1.0).angle_between(&Vec2::new(0.0, 1.0)), 3.0 * PI / 4.0);
         }
     }
 }
