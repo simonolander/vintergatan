@@ -595,11 +595,11 @@ impl Universe {
         })
     }
 
-    fn get_width(&self) -> usize {
+    pub(crate) fn get_width(&self) -> usize {
         self.grid.first().map(|row| row.len()).unwrap_or(0)
     }
 
-    fn get_height(&self) -> usize {
+    pub(crate) fn get_height(&self) -> usize {
         self.grid.len()
     }
 
@@ -637,6 +637,13 @@ impl Universe {
                 borders.insert(Border::down(p));
             }
         }
+        borders
+    }
+
+    /** Returns the interior and exterior borders */
+    pub fn get_all_borders(&self) -> BTreeSet<Border> {
+        let mut borders = self.get_interior_borders();
+        borders.extend(self.get_frame_borders());
         borders
     }
 
