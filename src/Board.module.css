@@ -34,8 +34,12 @@
     stroke: #898989;
 }
 
-.wallGroup.objective .wallLine {
+.wallGroup.objectiveActive .wallLine {
     stroke: #5a5a5a;
+}
+
+.wallGroup.objectiveInactive .wallLine {
+    stroke: none;
 }
 
 .wallGroup.dangling .wallLine {

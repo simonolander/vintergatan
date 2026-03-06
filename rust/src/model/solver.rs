@@ -1,7 +1,8 @@
 use crate::model::border::Border;
 use crate::model::objective::{GalaxyCenter, Objective};
-use crate::model::position::Position;
+use crate::model::position::{CenterPlacement, Position};
 use crate::model::rectangle::Rectangle;
+use crate::model::universe::Universe;
 use itertools::Itertools;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
@@ -24,6 +25,61 @@ pub struct Solution {
 }
 
 impl Solver {
+    pub fn generate_objective(universe: &Universe) -> Objective {
+        // During the solving, every galaxy has the id of the index of their respective center in this Vec
+        let galaxy_centers = universe.get_galaxy_centers().into_iter().collect_vec();
+
+        // The borders represent what we know about every border at every point in time
+        // as we try to solve the universe
+        let mut borders: BTreeMap<Border, bool> = BTreeMap::new();
+
+        // The possible galaxy ids is a list of potential galaxy ids for every position in the universe
+        let mut possible_galaxy_ids = universe
+            .get_positions()
+            .map(|p| (p, BTreeSet::from_iter(0..galaxy_centers.len())))
+            .collect::<BTreeMap<_, _>>();
+
+        // We know that all the borders in the frame are active
+        for frame_border in universe.get_frame_borders() {
+            borders.insert(frame_border, true);
+        }
+
+        // We know that all the borders that intersect a galaxy center is inactive
+        for galaxy_center in &galaxy_centers {
+            match galaxy_center.position.get_center_placement() {
+                CenterPlacement::Center(_) => {}
+                CenterPlacement::VerticalBorder(border)
+                | CenterPlacement::HorizontalBorder(border) => {
+                    borders.insert(border, false);
+                }
+                CenterPlacement::Intersection(rect) => {
+                    borders.insert(Border::right(rect.top_left()), false);
+                    borders.insert(Border::down(rect.top_right()), false);
+                    borders.insert(Border::left(rect.bottom_right()), false);
+                    borders.insert(Border::up(rect.bottom_left()), false);
+                }
+            }
+        }
+
+        // The objective borders are the borders that will eventually be in the objective.
+        // We include all the trivial borders, for the player's convenience
+        let mut objective_borders: BTreeMap<Border, bool> = borders.clone();
+
+        // We know that all cells around the galaxy centers belong to that specific galaxy
+        for (id, center) in galaxy_centers.iter().enumerate() {
+            for position in center.position.get_center_placement().get_positions() {
+                possible_galaxy_ids
+                    .get_mut(&position)
+                    .unwrap()
+                    .retain(|&galaxy_id| galaxy_id == id);
+            }
+        }
+
+        // TODO
+
+        Objective::new(galaxy_centers.into_iter().collect(), objective_borders)
+    }
+
     pub fn new(width: usize, height: usize, objective: &Objective) -> Self {
         let galaxy_centers: Vec<GalaxyCenter> = objective.centers.iter().copied().collect();
 
@@ -31,9 +87,9 @@ impl Solver {
         let mut borders = BTreeMap::new();
 
         // We know all the borders in the objective are active
-        for &border in &objective.walls {
-            borders.insert(border, true);
-        }
+        // for &border in &objective.borders {
+        //     borders.insert(border, true);
+        // }
 
         // We know that all the borders in the frame are active
         for column in 0..width {
@@ -373,7 +429,7 @@ mod tests {
         use crate::model::objective::{GalaxyCenter, Objective};
         use crate::model::position::Position;
         use crate::model::solver::Solver;
-        use std::collections::HashSet;
+        use std::collections::{BTreeMap, BTreeSet, HashSet};
 
         #[test]
         fn should_successfully_mirror_borders() {
@@ -381,8 +437,8 @@ mod tests {
                 3,
                 4,
                 &Objective {
-                    walls: HashSet::default(),
-                    centers: HashSet::from_iter(vec![
+                    borders: BTreeMap::default(),
+                    centers: BTreeSet::from_iter(vec![
                         GalaxyCenter::from(Position::new(2, 2)),
                         GalaxyCenter::from(Position::new(4, 2)),
                     ]),

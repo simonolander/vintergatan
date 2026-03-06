@@ -2,16 +2,18 @@ use crate::model::board::Board;
 use crate::model::board_error::BoardError;
 use crate::model::border::Border;
 use crate::model::history::{History, HistoryEntry};
-use crate::model::objective::Objective;
+use crate::model::objective::{GalaxyCenter, Objective};
 use crate::model::position::Position;
 use crate::model::solver::Solver;
 use crate::model::universe::Universe;
 use rand::prelude::IteratorRandom;
 use serde::Serialize;
+use std::collections::{BTreeMap, BTreeSet};
 use ts_rs::TS;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::{JsValue, UnwrapThrowExt};
 use HistoryEntry::ToggleBorder;
+use crate::model::galaxy::Galaxy;
 
 const GENERATE_SOLVED: bool = false;
 
@@ -38,7 +40,6 @@ pub struct GameState {
 impl GameState {
     pub fn generate(size: usize) -> GameState {
         let universe = Universe::generate(size, size);
-        let objective = Objective::generate(&universe);
         let mut board = Board::new(size, size);
         let error = None;
         let history = History::new();
@@ -53,13 +54,14 @@ impl GameState {
             }
         }
 
-        let mut solver = Solver::new(size, size, &objective);
-        let solution = solver.solve().unwrap();
-        for border in solution.borders {
-            if board.contains(&border.p1()) && board.contains(&border.p2()) {
-                board.add_wall(border.p1(), border.p2());
-            }
-        }
+        let objective = Solver::generate_objective(&universe);
+        // let mut solver = Solver::new(size, size, &objective);
+        // let solution = solver.solve().unwrap();
+        // for border in solution.borders {
+        //     if board.contains(&border.p1()) && board.contains(&border.p2()) {
+        //         board.add_wall(border.p1(), border.p2());
+        //     }
+        // }
 
         GameState {
             universe,
@@ -106,19 +108,33 @@ impl GameState {
     }
 
     pub fn take_hint(&mut self) {
-        let border = self
-            .universe
-            .get_galaxies()
-            .iter()
-            .flat_map(|g| g.get_borders())
-            .filter(|border| self.board.contains(&border.p1()) && self.board.contains(&border.p2()))
-            .filter(|border| !self.objective.walls.contains(border))
-            .filter(|border| !self.board.is_active(border))
-            .choose(&mut rand::thread_rng());
+        let correct_borders = self.universe.get_interior_borders();
+        let active_borders: BTreeSet<Border> = self.board.get_interior_borders().collect();
+        let mut rng = rand::thread_rng();
 
-        if let Some(border) = border {
-            self.board.add_wall(border.p1(), border.p2());
-            self.objective.walls.insert(border);
+        if let Some(incorrect_active_border) = active_borders
+            .iter()
+            .filter(|b| !correct_borders.contains(b))
+            .choose(&mut rng)
+        {
+            self.board
+                .remove_wall(incorrect_active_border.p1(), incorrect_active_border.p2());
+            self.objective
+                .borders
+                .insert(*incorrect_active_border, false);
+            self.error = None;
+        } else if let Some(incorrect_inactive_border) = correct_borders
+            .iter()
+            .filter(|b| !active_borders.contains(b))
+            .choose(&mut rng)
+        {
+            self.board.add_wall(
+                incorrect_inactive_border.p1(),
+                incorrect_inactive_border.p2(),
+            );
+            self.objective
+                .borders
+                .insert(*incorrect_inactive_border, true);
             self.error = None;
         }
     }
@@ -142,7 +158,7 @@ impl GameState {
 pub struct StateView {
     pub vertical_borders: Vec<Vec<bool>>,
     pub horizontal_borders: Vec<Vec<bool>>,
-    pub objective: Objective,
+    pub objective: ObjectiveView,
     pub error: Option<BoardError>,
     pub has_future: bool,
     pub has_past: bool,
@@ -154,7 +170,7 @@ impl From<&GameState> for StateView {
         StateView {
             vertical_borders: state.board.get_vertical_borders(),
             horizontal_borders: state.board.get_horizontal_borders(),
-            objective: state.objective.clone(),
+            objective: (&state.objective).into(),
             error: state.error.clone(),
             has_future: state.history.has_future(),
             has_past: state.history.has_past(),
@@ -163,6 +179,33 @@ impl From<&GameState> for StateView {
                 .as_ref()
                 .map(|it| it.is_error_free())
                 .unwrap_or(false),
+        }
+    }
+}
+
+#[derive(Serialize, TS)]
+#[ts(export)]
+pub struct ObjectiveView {
+    pub centers: BTreeSet<GalaxyCenter>,
+    pub active_borders: BTreeSet<Border>,
+    pub inactive_borders: BTreeSet<Border>,
+}
+
+impl From<&Objective> for ObjectiveView {
+    fn from(objective: &Objective) -> Self {
+        let mut active_borders = BTreeSet::new();
+        let mut inactive_borders = BTreeSet::new();
+        for (&border, &active) in &objective.borders {
+            if active {
+                active_borders.insert(border);
+            } else {
+                inactive_borders.insert(border);
+            }
+        }
+        ObjectiveView {
+            centers: objective.centers.clone(),
+            active_borders,
+            inactive_borders,
         }
     }
 }

@@ -1,10 +1,8 @@
 use crate::model::border::Border;
 use crate::model::position::Position;
 use crate::model::universe::Universe;
-use itertools::Itertools;
 use serde::Serialize;
-use std::collections::{BTreeSet, HashSet};
-use std::ops::Div;
+use std::collections::{BTreeMap, BTreeSet};
 use ts_rs::TS;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Ord, PartialOrd, Hash, Serialize, TS)]
@@ -15,13 +13,17 @@ pub struct GalaxyCenter {
 
 #[derive(Serialize, Clone, TS)]
 pub struct Objective {
-    pub centers: HashSet<GalaxyCenter>,
-    pub walls: HashSet<Border>,
+    pub centers: BTreeSet<GalaxyCenter>,
+    pub borders: BTreeMap<Border, bool>,
 }
 
 impl Objective {
+    pub fn new(centers: BTreeSet<GalaxyCenter>, borders: BTreeMap<Border, bool>) -> Self {
+        Self { centers, borders }
+    }
+
     pub fn generate(universe: &Universe) -> Self {
-        let walls = HashSet::new();
+        let borders = BTreeMap::new();
         let centers = universe
             .get_galaxies()
             .iter()
@@ -32,7 +34,7 @@ impl Objective {
             })
             .collect();
 
-        Objective { centers, walls }
+        Objective { centers, borders }
     }
 
     pub fn from_string(string: &str) -> Self {
@@ -57,7 +59,7 @@ impl Objective {
         // let borders =
         Objective {
             centers,
-            walls: HashSet::new(),
+            borders: BTreeMap::new(),
         }
     }
 
@@ -110,7 +112,7 @@ mod tests {
         use crate::model::objective::{GalaxyCenter, Objective};
         use crate::model::position::Position;
         use indoc::indoc;
-        use std::collections::HashSet;
+        use std::collections::BTreeSet;
 
         #[test]
         pub fn should_parse_objective() {
@@ -141,7 +143,7 @@ mod tests {
             });
             assert_eq!(
                 objective.centers,
-                HashSet::from_iter(
+                BTreeSet::from_iter(
                     vec![
                         (0, 4),
                         (0, 12),

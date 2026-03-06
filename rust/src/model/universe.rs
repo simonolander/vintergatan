@@ -1,4 +1,6 @@
+use crate::model::border::Border;
 use crate::model::galaxy::Galaxy;
+use crate::model::objective::GalaxyCenter;
 use crate::model::position::Position;
 use crate::model::vec2::Vec2;
 use itertools::Itertools;
@@ -6,7 +8,7 @@ use ordered_float::OrderedFloat;
 use rand::prelude::SliceRandom;
 use rand::rngs::StdRng;
 use rand::{random, Rng, SeedableRng};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::ops::{Index, IndexMut};
 
@@ -601,6 +603,43 @@ impl Universe {
         self.grid.len()
     }
 
+    pub fn get_galaxy_centers(&self) -> BTreeSet<GalaxyCenter> {
+        self.get_galaxies()
+            .iter()
+            .map(|galaxy| GalaxyCenter::from(galaxy.center()))
+            .collect()
+    }
+
+    /** Return all the borders that surround the universe */
+    pub fn get_frame_borders(&self) -> BTreeSet<Border> {
+        let mut borders = BTreeSet::new();
+        for column in 0..self.get_width() {
+            borders.insert(Border::up(Position::from((0, column))));
+            borders.insert(Border::up(Position::from((self.get_height(), column))));
+        }
+        for row in 0..self.get_height() {
+            borders.insert(Border::left(Position::from((row, 0))));
+            borders.insert(Border::left(Position::from((row, self.get_width()))));
+        }
+        borders
+    }
+
+    /** Return all the borders that lie inside the universe */
+    pub fn get_interior_borders(&self) -> BTreeSet<Border> {
+        let mut borders = BTreeSet::new();
+        for p in self.get_positions() {
+            let right = p.right();
+            if self.is_inside(&right) && self[&p] != self[&right] {
+                borders.insert(Border::right(p));
+            }
+            let down = p.down();
+            if self.is_inside(&down) && self[&p] != self[&down] {
+                borders.insert(Border::down(p));
+            }
+        }
+        borders
+    }
+
     fn get_next_available_id(&self) -> usize {
         let size = self.get_width() * self.get_height();
         let mut id_in_use = vec![false; size];
@@ -720,6 +759,10 @@ impl Universe {
             .collect()
     }
 
+    /**
+     * Returns true if two positions belong to the same galaxy. The positions do not need to be adjacent.
+     * Returns false if any one of the positions are outside the universe.
+     */
     pub fn are_neighbours(&self, p1: &Position, p2: &Position) -> bool {
         self.is_inside(p1) && self.is_inside(p2) && self[p1] == self[p2]
     }
