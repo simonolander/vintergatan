@@ -8,12 +8,11 @@ use crate::model::solver::Solver;
 use crate::model::universe::Universe;
 use rand::prelude::IteratorRandom;
 use serde::Serialize;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use ts_rs::TS;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::{JsValue, UnwrapThrowExt};
 use HistoryEntry::ToggleBorder;
-use crate::model::galaxy::Galaxy;
 
 const GENERATE_SOLVED: bool = false;
 

@@ -7,6 +7,7 @@ import type { StateView } from "../rust/bindings/StateView.ts";
 import type { Border } from "../rust/bindings/Border.ts";
 import type { Position } from "../rust/bindings/Position.ts";
 import { clsx } from "clsx";
+import StarryOverlay from "./StarryOverlay";
 
 type AppState = {
   gameState: GameState;
@@ -106,6 +107,7 @@ function App() {
             view={state.view}
             onToggle={(border) => dispatch({ type: "TOGGLE", border })}
           />
+          <StarryOverlay show={state.view.is_solved} />
         </div>
 
         <div className={styles.controls}>
