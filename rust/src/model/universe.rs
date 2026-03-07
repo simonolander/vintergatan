@@ -1,4 +1,6 @@
+use crate::model::border::Border;
 use crate::model::galaxy::Galaxy;
+use crate::model::objective::GalaxyCenter;
 use crate::model::position::Position;
 use crate::model::vec2::Vec2;
 use itertools::Itertools;
@@ -6,7 +8,7 @@ use ordered_float::OrderedFloat;
 use rand::prelude::SliceRandom;
 use rand::rngs::StdRng;
 use rand::{random, Rng, SeedableRng};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::ops::{Index, IndexMut};
 
@@ -371,8 +373,7 @@ impl Universe {
             }
             if universe.get_score() > best_universe.get_score() {
                 best_universe = universe.clone();
-            }
-            else {
+            } else {
                 universe = best_universe.clone();
             }
         }
@@ -582,11 +583,11 @@ impl Universe {
         *self.grid.iter().flatten().max().unwrap_or(&0)
     }
 
-    pub fn get_ids(&self) -> impl Iterator<Item=&usize> {
+    pub fn get_ids(&self) -> impl Iterator<Item = &usize> {
         self.grid.iter().flatten()
     }
 
-    fn get_entries(&self) -> impl Iterator<Item=(Position, usize)> + '_ {
+    fn get_entries(&self) -> impl Iterator<Item = (Position, usize)> + '_ {
         self.grid.iter().enumerate().flat_map(|(row_index, row)| {
             row.iter()
                 .enumerate()
@@ -594,12 +595,56 @@ impl Universe {
         })
     }
 
-    fn get_width(&self) -> usize {
+    pub(crate) fn get_width(&self) -> usize {
         self.grid.first().map(|row| row.len()).unwrap_or(0)
     }
 
-    fn get_height(&self) -> usize {
+    pub(crate) fn get_height(&self) -> usize {
         self.grid.len()
+    }
+
+    pub fn get_galaxy_centers(&self) -> BTreeSet<GalaxyCenter> {
+        self.get_galaxies()
+            .iter()
+            .map(|galaxy| GalaxyCenter::from(galaxy.center()))
+            .collect()
+    }
+
+    /** Return all the borders that surround the universe */
+    pub fn get_frame_borders(&self) -> BTreeSet<Border> {
+        let mut borders = BTreeSet::new();
+        for column in 0..self.get_width() {
+            borders.insert(Border::up(Position::from((0, column))));
+            borders.insert(Border::up(Position::from((self.get_height(), column))));
+        }
+        for row in 0..self.get_height() {
+            borders.insert(Border::left(Position::from((row, 0))));
+            borders.insert(Border::left(Position::from((row, self.get_width()))));
+        }
+        borders
+    }
+
+    /** Return all the borders that lie inside the universe */
+    pub fn get_interior_borders(&self) -> BTreeSet<Border> {
+        let mut borders = BTreeSet::new();
+        for p in self.get_positions() {
+            let right = p.right();
+            if self.is_inside(&right) && self[&p] != self[&right] {
+                borders.insert(Border::right(p));
+            }
+            let down = p.down();
+            if self.is_inside(&down) && self[&p] != self[&down] {
+                borders.insert(Border::down(p));
+            }
+        }
+        borders
+    }
+
+    /** Returns the interior and exterior borders */
+    pub fn get_all_borders(&self) -> BTreeSet<Border> {
+        let mut borders = self.get_interior_borders();
+        borders.extend(self.get_frame_borders());
+        borders
     }
 
     fn get_next_available_id(&self) -> usize {
@@ -669,7 +714,8 @@ impl Universe {
             score -= current_length.powf(straight_line_penalty);
         }
 
-        score += self.get_galaxies()
+        score += self
+            .get_galaxies()
             .iter()
             .map(|g| g.get_score())
             .sum::<f64>();
@@ -720,6 +766,10 @@ impl Universe {
             .collect()
     }
 
+    /**
+     * Returns true if two positions belong to the same galaxy. The positions do not need to be adjacent.
+     * Returns false if any one of the positions are outside the universe.
+     */
     pub fn are_neighbours(&self, p1: &Position, p2: &Position) -> bool {
         self.is_inside(p1) && self.is_inside(p2) && self[p1] == self[p2]
     }
@@ -752,7 +802,7 @@ impl Universe {
         self.to_string()
     }
 
-    pub fn get_positions(&self) -> impl Iterator<Item=Position> + '_ {
+    pub fn get_positions(&self) -> impl Iterator<Item = Position> + '_ {
         (0..self.get_height())
             .flat_map(move |row| (0..self.get_width()).map(move |col| (row, col)))
             .map(|t| Position::from(t))
@@ -762,6 +812,7 @@ impl Universe {
 impl Display for Universe {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for row in 0..=self.get_height() {
+            let mut line = String::new();
             for column in 0..=self.get_width() {
                 let bottom_right = Position::from((row, column));
                 let bottom_left = bottom_right.left();
@@ -774,25 +825,26 @@ impl Display for Universe {
                 let bar_bottom =
                     row != self.get_height() && !self.are_neighbours(&bottom_left, &bottom_right);
                 let bar_left = column != 0 && !self.are_neighbours(&top_left, &bottom_left);
-                match (bar_top, bar_right, bar_bottom, bar_left) {
-                    (false, false, false, false) => write!(f, "  ")?,
-                    (false, false, false, true) => write!(f, "╴ ")?,
-                    (false, false, true, false) => write!(f, "╷ ")?,
-                    (false, false, true, true) => write!(f, "┐ ")?,
-                    (false, true, false, false) => write!(f, "╶─")?,
-                    (false, true, false, true) => write!(f, "──")?,
-                    (false, true, true, false) => write!(f, "┌─")?,
-                    (false, true, true, true) => write!(f, "┬─")?,
-                    (true, false, false, false) => write!(f, "╵ ")?,
-                    (true, false, false, true) => write!(f, "┘ ")?,
-                    (true, false, true, false) => write!(f, "│ ")?,
-                    (true, false, true, true) => write!(f, "┤ ")?,
-                    (true, true, false, false) => write!(f, "└─")?,
-                    (true, true, false, true) => write!(f, "┴─")?,
-                    (true, true, true, false) => write!(f, "├─")?,
-                    (true, true, true, true) => write!(f, "┼─")?,
-                }
+                line.push_str(match (bar_top, bar_right, bar_bottom, bar_left) {
+                    (false, false, false, false) => "  ",
+                    (false, false, false, true) => "╴ ",
+                    (false, false, true, false) => "╷ ",
+                    (false, false, true, true) => "┐ ",
+                    (false, true, false, false) => "╶─",
+                    (false, true, false, true) => "──",
+                    (false, true, true, false) => "┌─",
+                    (false, true, true, true) => "┬─",
+                    (true, false, false, false) => "╵ ",
+                    (true, false, false, true) => "┘ ",
+                    (true, false, true, false) => "│ ",
+                    (true, false, true, true) => "┤ ",
+                    (true, true, false, false) => "└─",
+                    (true, true, false, true) => "┴─",
+                    (true, true, true, false) => "├─",
+                    (true, true, true, true) => "┼─",
+                })
             }
+            f.write_str(line.trim_end())?;
             if row != self.get_height() {
                 write!(f, "\n")?;
             }

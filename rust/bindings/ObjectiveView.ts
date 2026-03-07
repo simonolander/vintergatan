@@ -2,4 +2,4 @@
 import type { Border } from "./Border";
 import type { GalaxyCenter } from "./GalaxyCenter";
 
-export type Objective = { centers: Array<GalaxyCenter>, walls: Array<Border>, };
+export type ObjectiveView = { centers: Array<GalaxyCenter>, active_borders: Array<Border>, inactive_borders: Array<Border>, };

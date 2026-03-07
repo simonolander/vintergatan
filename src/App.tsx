@@ -29,6 +29,9 @@ type Action =
 
 function makeInitialState(): AppState {
   const gameState = generate_state();
+  console.debug(gameState.objective_to_string(), "(objective)")
+  console.debug(gameState.board_to_string(), "(board)");
+  console.debug(gameState.universe_to_string(), "(solution)");
   const view = gameState.get_view() as StateView;
   return { gameState, view };
 }
@@ -236,12 +239,19 @@ function Board({ view, onToggle }: BoardProps) {
                 border.p1.column === column &&
                 border.p2.column === column + 1,
             );
-            const objective = view.objective.walls.some(
+            const objectiveActive = view.objective.active_borders.some(
               (border) =>
                 border.p1.row === row &&
                 border.p1.column === column &&
                 border.p2.column === column + 1,
             );
+            const objectiveInactive = view.objective.inactive_borders.some(
+              (border) =>
+                border.p1.row === row &&
+                border.p1.column === column &&
+                border.p2.column === column + 1,
+            );
+            const objective = objectiveActive || objectiveInactive;
 
             const onClick = () => {
               if (!objective) {
@@ -250,12 +260,14 @@ function Board({ view, onToggle }: BoardProps) {
             };
             return (
               <g
-                key={`vertical-wall-${row}-${column}`}
+                key={`vertical-border-${row}-${column}`}
                 className={clsx(
                   boardStyles.wallGroup,
                   active && boardStyles.active,
                   dangling && boardStyles.dangling,
                   objective && boardStyles.objective,
+                  objectiveActive && boardStyles.objectiveActive,
+                  objectiveInactive && boardStyles.objectiveInactive,
                 )}
                 onClick={onClick}
               >
@@ -293,12 +305,19 @@ function Board({ view, onToggle }: BoardProps) {
                 border.p1.column === column &&
                 border.p2.row === row + 1,
             );
-            const objective = view.objective.walls.some(
+            const objectiveActive = view.objective.active_borders.some(
               (border) =>
                 border.p1.row === row &&
                 border.p1.column === column &&
                 border.p2.row === row + 1,
             );
+            const objectiveInactive = view.objective.inactive_borders.some(
+              (border) =>
+                border.p1.row === row &&
+                border.p1.column === column &&
+                border.p2.row === row + 1,
+            );
+            const objective = objectiveActive || objectiveInactive;
 
             const onClick = () => {
               if (!objective) {
@@ -307,12 +326,14 @@ function Board({ view, onToggle }: BoardProps) {
             };
             return (
               <g
-                key={`vertical-wall-${row}-${column}`}
+                key={`horizontal-border-${row}-${column}`}
                 className={clsx(
                   boardStyles.wallGroup,
                   active && boardStyles.active,
                   dangling && boardStyles.dangling,
                   objective && boardStyles.objective,
+                  objectiveActive && boardStyles.objectiveActive,
+                  objectiveInactive && boardStyles.objectiveInactive,
                 )}
                 onClick={onClick}
               >
