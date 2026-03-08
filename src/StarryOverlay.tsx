@@ -13,9 +13,9 @@ function randomVictoryMessage() {
     "Brilliant",
     "Wonderful",
     "Fantastic",
+    "Marvelous",
   ];
-  const message = messages[Math.floor(Math.random() * messages.length)];
-  return message;
+  return messages[Math.floor(Math.random() * messages.length)];
 }
 
 const StarryOverlay: React.FC<StarryOverlayProps> = ({ show }) => {
