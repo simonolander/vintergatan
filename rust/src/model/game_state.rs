@@ -39,7 +39,11 @@ pub struct GameState {
 impl GameState {
     pub fn generate(size: usize) -> GameState {
         let universe = Universe::generate(size, size);
+        let objective = Solver::generate_objective(&universe);
         let mut board = Board::new(size, size);
+        for border in objective.get_active_borders() {
+            board.add_wall(border.p1(), border.p2());
+        }
         let error = None;
         let history = History::new();
 
@@ -52,8 +56,6 @@ impl GameState {
                 }
             }
         }
-
-        let objective = Solver::generate_objective(&universe);
         // let mut solver = Solver::new(size, size, &objective);
         // let solution = solver.solve().unwrap();
         // for border in solution.borders {

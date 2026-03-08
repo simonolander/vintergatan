@@ -37,6 +37,19 @@ impl Objective {
         Objective { centers, borders }
     }
 
+    /** Get all the borders that need to be active according to the objective */
+    pub fn get_active_borders(&self) -> BTreeSet<Border> {
+        self.borders.iter().filter_map(|(border, active)| {
+            if *active {
+                Some(*border)
+            }
+            else {
+                None
+            }
+        })
+            .collect()
+    }
+
     pub fn from_string(string: &str) -> Self {
         let centers = string
             .lines()
