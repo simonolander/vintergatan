@@ -47,17 +47,8 @@ impl History {
     }
 
     pub fn push(&mut self, entry: HistoryEntry) {
-        if self.has_future() {
-            let mut future = self.entries[self.current_index..]
-                .iter()
-                .cloned()
-                .rev()
-                .collect();
-            self.entries.append(&mut future);
-            self.entries.push(entry);
-        } else {
-            self.entries.push(entry);
-        }
+        self.entries.truncate(self.current_index);
+        self.entries.push(entry);
         self.current_index = self.entries.len();
         assert!(self.has_past());
         assert!(!self.has_future());
@@ -101,5 +92,27 @@ mod tests {
         let redo = history.redo();
         assert_eq!(redo.unwrap(), &entry);
         assert!(!history.has_future());
+    }
+
+    #[test]
+    fn should_discard_future_when_pushing_after_undo() {
+        let mut history = History::new();
+        history.push(some_entry());
+        history.push(some_entry());
+        history.push(some_entry());
+        history.undo();
+        history.undo();
+        assert!(history.has_future());
+
+        history.push(some_entry());
+        assert!(
+            !history.has_future(),
+            "History should not have future after pushing in the past"
+        );
+        assert_eq!(
+            history.entries.len(),
+            2,
+            "History entries should be truncated to only include the new entry"
+        );
     }
 }
