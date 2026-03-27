@@ -87,6 +87,16 @@ impl GameState {
     }
 
     pub fn check_solution(&mut self) {
+        self.objective
+            .borders
+            .iter()
+            .for_each(|(border, &active)| {
+                if active {
+                    self.board.add_border(*border)
+                } else {
+                    self.board.remove_border(border)
+                }
+            });
         self.error = self.board.compute_error(&self.objective).into();
     }
 
