@@ -4,7 +4,7 @@ Laniakea is a puzzle game. The goal is to divide a grid into several regions, ca
 
 ## Example Solution
 
-![example-solution.png](screenshot/example-solution.png){ width=300 }
+![example-solution.png](screenshot/example-solution.png)
 
 ## The Rules
 

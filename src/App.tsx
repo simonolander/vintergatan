@@ -149,6 +149,14 @@ function App() {
               Check Solution
             </button>
           )}
+          <a
+            href="https://github.com/simonolander/laniakea/blob/master/tutorial.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.tutorialLink}
+          >
+            How to play
+          </a>
         </div>
       </div>
     </div>
