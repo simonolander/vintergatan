@@ -93,7 +93,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const promise = navigator.wakeLock.request("screen").catch(console.warn);
+    const wakeLock = navigator.wakeLock;
+    if (!wakeLock) {
+      return;
+    }
+
+    const promise = wakeLock.request("screen").catch(console.warn);
     return () => {
       promise.then((sentinel) => sentinel?.release().catch(console.warn));
     };
