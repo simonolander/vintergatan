@@ -227,18 +227,6 @@ function Board({ view, onToggle }: BoardProps) {
       }
 
       {
-        // Render outer frame, the border rectangle
-        <rect
-          x={WALL_SIZE / 2.0}
-          y={WALL_SIZE / 2.0}
-          width={VIEW_BOX_SIZE - WALL_SIZE}
-          height={VIEW_BOX_SIZE - WALL_SIZE}
-          strokeWidth={WALL_SIZE}
-          className={boardStyles.outerBorder}
-        />
-      }
-
-      {
         // Render all vertical borders
         view.vertical_borders.map((rowArray, row) =>
           rowArray.map((active, column) => {
@@ -410,6 +398,18 @@ function Board({ view, onToggle }: BoardProps) {
             </g>
           );
         })
+      }
+
+      {
+        // Render outer frame, the border rectangle
+        <rect
+            x={WALL_SIZE / 2.0}
+            y={WALL_SIZE / 2.0}
+            width={VIEW_BOX_SIZE - WALL_SIZE}
+            height={VIEW_BOX_SIZE - WALL_SIZE}
+            strokeWidth={WALL_SIZE}
+            className={boardStyles.outerBorder}
+        />
       }
     </svg>
   );
