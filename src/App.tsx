@@ -30,7 +30,7 @@ type Action =
 
 function makeInitialState(): AppState {
   const gameState = generate_state();
-  console.debug(gameState.objective_to_string(), "(objective)")
+  console.debug(gameState.objective_to_string(), "(objective)");
   console.debug(gameState.board_to_string(), "(board)");
   console.debug(gameState.universe_to_string(), "(solution)");
   const view = gameState.get_view() as StateView;
@@ -227,134 +227,270 @@ function Board({ view, onToggle }: BoardProps) {
       }
 
       {
-        // Render all vertical borders
+        // Render all inactive vertical borders
         view.vertical_borders.map((rowArray, row) =>
-          rowArray.map((active, column) => {
-            const p1 = { row, column };
-            const p2 = { row, column: column + 1 };
-            const { x_mid, y_min, x_max, y_mid, y_max, x_min } = getWallPoints(
-              p1,
-              p2,
-            );
-            const dangling = view.error?.dangling_borders.some(
-              (border) =>
-                border.p1.row === row &&
-                border.p1.column === column &&
-                border.p2.column === column + 1,
-            );
-            const objectiveActive = view.objective.active_borders.some(
-              (border) =>
-                border.p1.row === row &&
-                border.p1.column === column &&
-                border.p2.column === column + 1,
-            );
-            const objectiveInactive = view.objective.inactive_borders.some(
-              (border) =>
-                border.p1.row === row &&
-                border.p1.column === column &&
-                border.p2.column === column + 1,
-            );
-            const objective = objectiveActive || objectiveInactive;
+          rowArray
+            .map((active, column) => ({ active, column }))
+            .filter(({ active }) => !active)
+            .map(({ active, column }) => {
+              const p1 = { row, column };
+              const p2 = { row, column: column + 1 };
+              const { x_mid, y_min, x_max, y_mid, y_max, x_min } =
+                getWallPoints(p1, p2);
+              const dangling = view.error?.dangling_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.column === column + 1,
+              );
+              const objectiveActive = view.objective.active_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.column === column + 1,
+              );
+              const objectiveInactive = view.objective.inactive_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.column === column + 1,
+              );
+              const objective = objectiveActive || objectiveInactive;
 
-            const onClick = () => {
-              if (!objective) {
-                onToggle({ p1, p2 });
-              }
-            };
-            return (
-              <g
-                key={`vertical-border-${row}-${column}`}
-                className={clsx(
-                  boardStyles.wallGroup,
-                  active && boardStyles.active,
-                  dangling && boardStyles.dangling,
-                  objective && boardStyles.objective,
-                  objectiveActive && boardStyles.objectiveActive,
-                  objectiveInactive && boardStyles.objectiveInactive,
-                )}
-                onClick={onClick}
-              >
-                <line
-                  x1={x_mid}
-                  y1={y_min}
-                  x2={x_mid}
-                  y2={y_max}
-                  strokeWidth={WALL_SIZE}
-                  className={boardStyles.wallLine}
-                />
-                <polygon
-                  points={`${x_mid},${y_min} ${x_max},${y_mid} ${x_mid},${y_max} ${x_min},${y_mid}`}
-                  className={boardStyles.wallTouch}
-                />
-              </g>
-            );
-          }),
+              const onClick = () => {
+                if (!objective) {
+                  onToggle({ p1, p2 });
+                }
+              };
+              return (
+                <g
+                  key={`vertical-border-${row}-${column}`}
+                  className={clsx(
+                    boardStyles.wallGroup,
+                    active && boardStyles.active,
+                    dangling && boardStyles.dangling,
+                    objective && boardStyles.objective,
+                    objectiveActive && boardStyles.objectiveActive,
+                    objectiveInactive && boardStyles.objectiveInactive,
+                  )}
+                  onClick={onClick}
+                >
+                  <line
+                    x1={x_mid}
+                    y1={y_min}
+                    x2={x_mid}
+                    y2={y_max}
+                    strokeWidth={WALL_SIZE}
+                    className={boardStyles.wallLine}
+                  />
+                  <polygon
+                    points={`${x_mid},${y_min} ${x_max},${y_mid} ${x_mid},${y_max} ${x_min},${y_mid}`}
+                    className={boardStyles.wallTouch}
+                  />
+                </g>
+              );
+            }),
         )
       }
 
       {
-        // Render all horizontal borders
+        // Render all inactive horizontal borders
         view.horizontal_borders.map((rowArr, row) =>
-          rowArr.map((active, column) => {
-            const p1 = { row, column };
-            const p2 = { row: row + 1, column };
-            const { x_min, y_mid, x_max, y_min, y_max, x_mid } = getWallPoints(
-              p1,
-              p2,
-            );
-            const dangling = view.error?.dangling_borders.some(
-              (border) =>
-                border.p1.row === row &&
-                border.p1.column === column &&
-                border.p2.row === row + 1,
-            );
-            const objectiveActive = view.objective.active_borders.some(
-              (border) =>
-                border.p1.row === row &&
-                border.p1.column === column &&
-                border.p2.row === row + 1,
-            );
-            const objectiveInactive = view.objective.inactive_borders.some(
-              (border) =>
-                border.p1.row === row &&
-                border.p1.column === column &&
-                border.p2.row === row + 1,
-            );
-            const objective = objectiveActive || objectiveInactive;
+          rowArr
+            .map((active, column) => ({ active, column }))
+            .filter(({ active }) => !active)
+            .map(({ active, column }) => {
+              const p1 = { row, column };
+              const p2 = { row: row + 1, column };
+              const { x_min, y_mid, x_max, y_min, y_max, x_mid } =
+                getWallPoints(p1, p2);
+              const dangling = view.error?.dangling_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.row === row + 1,
+              );
+              const objectiveActive = view.objective.active_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.row === row + 1,
+              );
+              const objectiveInactive = view.objective.inactive_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.row === row + 1,
+              );
+              const objective = objectiveActive || objectiveInactive;
 
-            const onClick = () => {
-              if (!objective) {
-                onToggle({ p1, p2 });
-              }
-            };
-            return (
-              <g
-                key={`horizontal-border-${row}-${column}`}
-                className={clsx(
-                  boardStyles.wallGroup,
-                  active && boardStyles.active,
-                  dangling && boardStyles.dangling,
-                  objective && boardStyles.objective,
-                  objectiveActive && boardStyles.objectiveActive,
-                  objectiveInactive && boardStyles.objectiveInactive,
-                )}
-                onClick={onClick}
-              >
-                <line
-                  x1={x_min}
-                  y1={y_mid}
-                  x2={x_max}
-                  y2={y_mid}
-                  strokeWidth={WALL_SIZE}
-                  className={boardStyles.wallLine}
-                />
-                <polygon
-                  points={`${x_mid},${y_min} ${x_max},${y_mid} ${x_mid},${y_max} ${x_min},${y_mid}`}
-                  className={boardStyles.wallTouch}
-                />
-              </g>
-            );
-          }),
+              const onClick = () => {
+                if (!objective) {
+                  onToggle({ p1, p2 });
+                }
+              };
+              return (
+                <g
+                  key={`horizontal-border-${row}-${column}`}
+                  className={clsx(
+                    boardStyles.wallGroup,
+                    active && boardStyles.active,
+                    dangling && boardStyles.dangling,
+                    objective && boardStyles.objective,
+                    objectiveActive && boardStyles.objectiveActive,
+                    objectiveInactive && boardStyles.objectiveInactive,
+                  )}
+                  onClick={onClick}
+                >
+                  <line
+                    x1={x_min}
+                    y1={y_mid}
+                    x2={x_max}
+                    y2={y_mid}
+                    strokeWidth={WALL_SIZE}
+                    className={boardStyles.wallLine}
+                  />
+                  <polygon
+                    points={`${x_mid},${y_min} ${x_max},${y_mid} ${x_mid},${y_max} ${x_min},${y_mid}`}
+                    className={boardStyles.wallTouch}
+                  />
+                </g>
+              );
+            }),
+        )
+      }
+
+      {
+        // Render all active vertical borders
+        view.vertical_borders.map((rowArray, row) =>
+          rowArray
+            .map((active, column) => ({ active, column }))
+            .filter(({ active }) => active)
+            .map(({ active, column }) => {
+              const p1 = { row, column };
+              const p2 = { row, column: column + 1 };
+              const { x_mid, y_min, x_max, y_mid, y_max, x_min } =
+                getWallPoints(p1, p2);
+              const dangling = view.error?.dangling_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.column === column + 1,
+              );
+              const objectiveActive = view.objective.active_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.column === column + 1,
+              );
+              const objectiveInactive = view.objective.inactive_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.column === column + 1,
+              );
+              const objective = objectiveActive || objectiveInactive;
+
+              const onClick = () => {
+                if (!objective) {
+                  onToggle({ p1, p2 });
+                }
+              };
+              return (
+                <g
+                  key={`vertical-border-${row}-${column}`}
+                  className={clsx(
+                    boardStyles.wallGroup,
+                    active && boardStyles.active,
+                    dangling && boardStyles.dangling,
+                    objective && boardStyles.objective,
+                    objectiveActive && boardStyles.objectiveActive,
+                    objectiveInactive && boardStyles.objectiveInactive,
+                  )}
+                  onClick={onClick}
+                >
+                  <line
+                    x1={x_mid}
+                    y1={y_min}
+                    x2={x_mid}
+                    y2={y_max}
+                    strokeWidth={WALL_SIZE}
+                    className={boardStyles.wallLine}
+                  />
+                  <polygon
+                    points={`${x_mid},${y_min} ${x_max},${y_mid} ${x_mid},${y_max} ${x_min},${y_mid}`}
+                    className={boardStyles.wallTouch}
+                  />
+                </g>
+              );
+            }),
+        )
+      }
+
+      {
+        // Render all active horizontal borders
+        view.horizontal_borders.map((rowArr, row) =>
+          rowArr
+            .map((active, column) => ({ active, column }))
+            .filter(({ active }) => active)
+            .map(({ active, column }) => {
+              const p1 = { row, column };
+              const p2 = { row: row + 1, column };
+              const { x_min, y_mid, x_max, y_min, y_max, x_mid } =
+                getWallPoints(p1, p2);
+              const dangling = view.error?.dangling_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.row === row + 1,
+              );
+              const objectiveActive = view.objective.active_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.row === row + 1,
+              );
+              const objectiveInactive = view.objective.inactive_borders.some(
+                (border) =>
+                  border.p1.row === row &&
+                  border.p1.column === column &&
+                  border.p2.row === row + 1,
+              );
+              const objective = objectiveActive || objectiveInactive;
+
+              const onClick = () => {
+                if (!objective) {
+                  onToggle({ p1, p2 });
+                }
+              };
+              return (
+                <g
+                  key={`horizontal-border-${row}-${column}`}
+                  className={clsx(
+                    boardStyles.wallGroup,
+                    active && boardStyles.active,
+                    dangling && boardStyles.dangling,
+                    objective && boardStyles.objective,
+                    objectiveActive && boardStyles.objectiveActive,
+                    objectiveInactive && boardStyles.objectiveInactive,
+                  )}
+                  onClick={onClick}
+                >
+                  <line
+                    x1={x_min}
+                    y1={y_mid}
+                    x2={x_max}
+                    y2={y_mid}
+                    strokeWidth={WALL_SIZE}
+                    className={boardStyles.wallLine}
+                  />
+                  <polygon
+                    points={`${x_mid},${y_min} ${x_max},${y_mid} ${x_mid},${y_max} ${x_min},${y_mid}`}
+                    className={boardStyles.wallTouch}
+                  />
+                </g>
+              );
+            }),
         )
       }
 
@@ -403,12 +539,12 @@ function Board({ view, onToggle }: BoardProps) {
       {
         // Render outer frame, the border rectangle
         <rect
-            x={WALL_SIZE / 2.0}
-            y={WALL_SIZE / 2.0}
-            width={VIEW_BOX_SIZE - WALL_SIZE}
-            height={VIEW_BOX_SIZE - WALL_SIZE}
-            strokeWidth={WALL_SIZE}
-            className={boardStyles.outerBorder}
+          x={WALL_SIZE / 2.0}
+          y={WALL_SIZE / 2.0}
+          width={VIEW_BOX_SIZE - WALL_SIZE}
+          height={VIEW_BOX_SIZE - WALL_SIZE}
+          strokeWidth={WALL_SIZE}
+          className={boardStyles.outerBorder}
         />
       }
     </svg>
