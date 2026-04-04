@@ -72,12 +72,15 @@
 
 .galaxyCenter.incorrectSize text {
     fill: red;
+    filter: drop-shadow(0 0 1px red);
 }
 
 .galaxyCenter.asymmetric {
     fill: #5b2828;
+    filter: drop-shadow(0 0 1px #5b2828);
 }
 
 .galaxyCenter.cut {
     fill: #5b2828;
+    filter: drop-shadow(0 0 1px #5b2828);
 }
