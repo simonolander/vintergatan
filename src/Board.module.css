@@ -58,6 +58,7 @@
 
 .galaxyCenter {
     fill: #aaaaaa;
+    filter: drop-shadow(0 0 1px #fff8);
 }
 
 .galaxyCenter text {

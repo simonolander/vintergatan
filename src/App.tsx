@@ -367,7 +367,7 @@ function Board({ view, onToggle }: BoardProps) {
           const cy =
             WALL_SIZE / 2.0 +
             ((WALL_SIZE + CELL_SIZE) / 2.0) * (center.position.row + 1);
-          const r = CELL_SIZE / 3.0 - WALL_SIZE;
+          const r = CELL_SIZE / 4.2 - WALL_SIZE;
 
           const cut = view.error?.cut_centers.some(
             (p) =>
